@@ -17,11 +17,11 @@ Ideally, I'd have an automated pipeline to show off using Airflow. However:
 The CIA does not provide any other exportables beyond static CSV files. Each has confusing
 columns and each table, while related, has no relational structure that can be exported.
 
-This Docker SQL compiler was therefore the fastest way to get a clean dataset for my Tableau dashboard.
+This Docker SQL script was therefore the fastest way to get a clean dataset for my Tableau dashboard.
 
 DATA QUALITY:
 
-All data was obtained from the CIA World Factbook website, linked in the Dashboard.
+All data was obtained from the CIA World Factbook website, linked in the Dashboard under "Data Source".
 
 Notably, the migrant data table is basically unusable, as the figures were not calculated correctly: 
     Both Ukraine and Peru are estimated to be losing people to migration right now,
@@ -29,12 +29,13 @@ Notably, the migrant data table is basically unusable, as the figures were not c
     Ukraine has a positive migration rate; ie. Ukraine is erronously listed as gaining ~35 people per 1,000.
     Using Peru as a benchmark to read the table ("maybe they're all flipped from negative?") you can see that
     some migration rates were calculated correctly [(Immigration - Emigration)/Population], and others were
-    flipped [(Emigration - Immigration)/Population]. The entire table needs to be redone to get correct values.
+    flipped [(Emigration - Immigration)/Population]. The entire migration table needs to be redone by the CIA 
+    to get correct values.
 
 Finally, the CIA does not provide historical data beyond three years, and even then, it's in PDF form
-optimized for print. If I was able to access historical or nested data for each country, I'd
+optimized for print. If I was able to access historical, nested data for each country, I'd
 be able to make a table for each year and animate changes over time, which would have been fun.
-The compiler below can be run again in the future, assuming the schema and exportables have the same format.
+Instead, this script is a less-automated means of joining exportable flat files.
 */
 
 --- Build the master_reference table by joining all files ---
@@ -127,19 +128,75 @@ from master_reference;
 
 --- Run tests to ensure joins & nulls are consistent ---
 
+INSERT INTO [Population - total] (slug, region, name, value, ranking)
+VALUES ('sample-slug', 'Sample Region', 'Sample Name', 500000, 250);
 
-/* NEW FILE STARTS HERE? */
+INSERT INTO [Real GDP (purchasing power parity)] (slug, region, name, value, date_of_information, ranking)
+VALUES ('sample-slug', 'Sample Region', 'Sample Name', 300000000, '2022', 250);
+
+INSERT INTO [Real GDP per capita] (slug, region, name, value, date_of_information, ranking)
+VALUES ('sample-slug', 'Sample Region', 'Sample Name', 20000, '2022', 250);
+
+-- Check that sample data joined correctly in `master_reference`
+DECLARE @test_passed BIT = 1;
+
+-- Verify specific values
+DECLARE @expectedRegion NVARCHAR(50) = 'Sample Region';
+DECLARE @expectedPopulation INT = 500000;
+DECLARE @expectedRGDP DECIMAL(18, 2) = 300000000;
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM master_reference
+    WHERE Region = @expectedRegion
+      AND Population = @expectedPopulation
+      AND RGDP = @expectedRGDP
+)
+BEGIN
+    PRINT 'Test Failed: Expected data not found in master_reference.';
+    SET @test_passed = 0;
+END
+
+-- Verify critical columns (Population, RGDP) have no NULL values
+IF EXISTS (
+    SELECT 1
+    FROM master_reference
+    WHERE Population IS NULL
+)
+BEGIN
+    PRINT 'Test Failed: Null values found in critical columns (Population, RGDP).';
+    SET @test_passed = 0;
+END
+
+-- Final test result output
+IF @test_passed = 1
+BEGIN
+    PRINT 'Test Passed: master_reference is correctly populated and contains no critical null values.';
+END
+ELSE
+BEGIN
+    PRINT 'Test Failed: Check output for issues.';
+END
+
+--- master_reference behaves as expected ---
 
 --- Copy master table ---
 --- Drop test rows ---
 --- Cleanse new working table of null rows ---
 
+With CleansedData AS(
+    
+)
+-- Final result to validate data and derived columns
+SELECT * FROM CleansedData;
+
+
 --- Math tables for derived values ---
 --- Validate with date matching ---
 
 --- full join Edu.date_of_information on RGDP.date_of_information
---- RGDP.[value] * (Edu.of_GDP/100) as Education_Budget
---- DENSE_RANK() Over(Order By RGDP.[value] * (Edu.of_GDP/100) DESC) as Education_Spend_Rank
+RGDP.value * (Edu.of_GDP/100) as Education_Budget
+DENSE_RANK() Over(Order By RGDP.[value] * (Edu.of_GDP/100) DESC) as Education_Spend_Rank
 
 --- Run tests to ensure functionality ---
 --- Non-matching dates ---
