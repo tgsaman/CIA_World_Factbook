@@ -40,16 +40,19 @@ Instead, this script is a less-automated means of joining exportable flat files.
 
 --- Build the master_reference table by joining all files ---
 Drop table if exists
-master_reference;
+master_reference,
+[Population - total],
+[Real GDP (purchasing power parity)],
+[Real GDP per capita];
 
 select 
 Pop.region as Region,
 Pop.name as Name,
 Pop.value as Population,
 Pop.ranking as Population_Rank,
-RGDP.value as RGDP,
-RGDP.date_of_information as RGDP_Year,
-RGDP.ranking as RGDP_Rank,
+RGDPppp.value as RGDP,
+RGDPppp.date_of_information as RGDP_Year,
+RGDPppp.ranking as RGDP_Rank,
 RGDP_pc.value as RGDP_Per_Capita,
 RGDP_pc.date_of_information as RGDP_Per_Capita_Year,
 RGDP_pc.ranking as RGDP_Per_Capita_Rank,
@@ -100,7 +103,7 @@ Unemp.Last_Updated_UR as Unemployment_Rate_Year
 INTO master_reference
 
 from [Population - total] as Pop
-full join [Real GDP (purchasing power parity)] as RGDP on RGDP.slug = Pop.slug
+full join [Real GDP (purchasing power parity)] as RGDPppp on RGDPppp.slug = Pop.slug
 full join [Real GDP per capita] as RGDP_pc on RGDP_pc.slug = Pop.slug
 full join [Real GDP growth rate] as RGDP_g on RGDP_g.slug = Pop.slug
 full join Area on Area.slug = Pop.slug --- Not included
@@ -184,19 +187,81 @@ END
 --- Drop test rows ---
 --- Cleanse new working table of null rows ---
 
-With CleansedData AS(
+SELECT
+    Region,
+    Name,
+    Population,
+    Population_Rank,
+    RGDP,
+    RGDP_Year,
+    RGDP_Rank,
+    RGDP_Per_Capita,
+    RGDP_Per_Capita_Rank,
+    RGDP_Growth_Rate,
+    RGDP_G_Year,
+    RGDP_Growth_Rank,
+    Population_Growth_Rate,
+    PopG_Year,
+    Gini_Index_Coefficient,
+    Gini_Rank,
+    Gini_date,
+    Inflation_Rate_YoY_Consumer_Prices,
+    Inflation_Rate_Year,
+    Inflation_rank,
     
-)
+    -- Derive Unemployed Population Estimate
+    Labor_Force,
+    Labor_Force_Year,
+    Labor_Force_rank,
+    Unemployment_Rate,
+    Unemployment_Rate_Year,
+
+    -- These need derivatives from RGDP
+    GDP_Pct_Agricultural,
+    GDPa_pct_Year,
+    GDP_Pct_Industrial,
+    GDPi_pct_Year,
+    GDP_Pct_Services,
+    GDPs_pct_Year,
+    
+    -- Express as a percentage of population next to GDP sector mix
+    Internet_Users,
+    Int_Users_Year,
+    Internet_Users_rank,
+
+    -- Derive from GDP
+    Education_Budget_Pct,
+    Edu_Budget_Year,
+    Military_budget_pct,
+    Mil_Budget_Year,
+    Coal_Revenue_Pct_GDP,
+    Coal_Rev_Year,
+    CO2_Emissions_mTonnes,
+    Emissions_Year,
+    Emissions_Rank,
+    Installed_Generating_Capacity_kW,
+    GenCap_Year,
+    GenCap_Rank,
+    Energy_Consumption_Per_Capita_btu,
+    Consumption_Year,
+    Energy_Consumption_pc_Rank
+    -- Skipping Migration rate bc DQ issue
+Into cleansed_data
+FROM master_reference
+WHERE Region IS NOT NULL 
+  AND Name IS NOT NULL 
+  AND Population IS NOT NULL;
+    
 -- Final result to validate data and derived columns
-SELECT * FROM CleansedData;
+select * from cleansed_data;
 
 
 --- Math tables for derived values ---
 --- Validate with date matching ---
 
 --- full join Edu.date_of_information on RGDP.date_of_information
-RGDP.value * (Edu.of_GDP/100) as Education_Budget
-DENSE_RANK() Over(Order By RGDP.[value] * (Edu.of_GDP/100) DESC) as Education_Spend_Rank
+--- RGDP.value * (Edu.of_GDP/100) as Education_Budget
+--- DENSE_RANK() Over(Order By RGDP.[value] * (Edu.of_GDP/100) DESC) as Education_Spend_Rank
 
 --- Run tests to ensure functionality ---
 --- Non-matching dates ---
