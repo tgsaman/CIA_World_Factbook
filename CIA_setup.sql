@@ -38,6 +38,9 @@ be able to make a table for each year and animate changes over time, which would
 Instead, this script is a less-automated means of joining exportable flat files.
 */
 
+---Create Insert Into section for test functionality & ability to add more files in future---
+
+
 --- Build the master_reference table by joining all files ---
 Drop table if exists
 master_reference,
