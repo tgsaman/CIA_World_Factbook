@@ -254,8 +254,6 @@ SELECT
 INTO cleansed_data
 FROM copied_data;
 
-Select * from cleansed_data;
-
 -- Final result to validate data and derived columns
 select 
     Region,
