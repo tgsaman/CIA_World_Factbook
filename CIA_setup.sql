@@ -44,9 +44,11 @@ Instead, this script is a less-automated means of joining exportable flat files.
 --- Build the master_reference table by joining all files ---
 Drop table if exists
 master_reference,
-[Population - total],
-[Real GDP (purchasing power parity)],
-[Real GDP per capita];
+cleansed_data
+
+Delete from [Population - total] Where slug = 'sample-slug'
+Delete from [Real GDP (purchasing power parity)] where slug = 'sample-slug'
+Delete from [Real GDP per capita] Where slug = 'sample-slug'
 
 select 
 Pop.region as Region,
@@ -128,9 +130,6 @@ full join [Revenue from coal] as CoalRev on CoalRev.slug = Pop.slug
 full join [Unemployment rate] as Unemp on Unemp.slug = Pop.slug
 full join [Youth unemployment rate (ages 15-24)] as yUnemp on yUnemp.slug = Pop.slug --- Not included
 ;
-
-Select * 
-from master_reference;
 
 --- Run tests to ensure joins & nulls are consistent ---
 
