@@ -51,6 +51,20 @@ Delete from [Population - total] Where slug = 'sample-slug'
 Delete from [Real GDP (purchasing power parity)] where slug = 'sample-slug'
 Delete from [Real GDP per capita] Where slug = 'sample-slug'
 
+--- Unit Test 1 Data to ensure joins & nulls are consistent ---
+
+INSERT INTO [Population - total] (slug, region, name, value, ranking)
+VALUES ('sample-slug', 'Sample Region', 'Sample Name', 500000, 250);
+
+INSERT INTO [Real GDP (purchasing power parity)] (slug, region, name, value, date_of_information, ranking)
+VALUES ('sample-slug', 'Sample Region', 'Sample Name', 300000000, '2022', 250);
+
+INSERT INTO [Real GDP per capita] (slug, region, name, value, date_of_information, ranking)
+VALUES ('sample-slug', 'Sample Region', 'Sample Name', 20000, '2022', 250);
+
+-- Check that sample data joined correctly in `master_reference`
+DECLARE @test_passed BIT = 1;
+
 select 
 Pop.region as Region,
 Pop.name as Name,
@@ -132,29 +146,16 @@ full join [Unemployment rate] as Unemp on Unemp.slug = Pop.slug
 full join [Youth unemployment rate (ages 15-24)] as yUnemp on yUnemp.slug = Pop.slug --- Not included
 ;
 
---- Run tests to ensure joins & nulls are consistent ---
+--- Unit Test 1 ---
 
-INSERT INTO [Population - total] (slug, region, name, value, ranking)
-VALUES ('sample-slug', 'Sample Region', 'Sample Name', 500000, 250);
-
-INSERT INTO [Real GDP (purchasing power parity)] (slug, region, name, value, date_of_information, ranking)
-VALUES ('sample-slug', 'Sample Region', 'Sample Name', 300000000, '2022', 250);
-
-INSERT INTO [Real GDP per capita] (slug, region, name, value, date_of_information, ranking)
-VALUES ('sample-slug', 'Sample Region', 'Sample Name', 20000, '2022', 250);
-
--- Check that sample data joined correctly in `master_reference`
-DECLARE @test_passed BIT = 1;
-
--- Verify specific values
-DECLARE @expectedRegion NVARCHAR(50) = 'Sample Region';
+DECLARE @expectedSlug NVARCHAR(50) = 'sample-slug';
 DECLARE @expectedPopulation INT = 500000;
 DECLARE @expectedRGDP DECIMAL(18, 2) = 300000000;
 
 IF NOT EXISTS (
     SELECT 1
     FROM master_reference
-    WHERE Region = @expectedRegion
+    WHERE Region = @expectedSlug
       AND Population = @expectedPopulation
       AND RGDP = @expectedRGDP
 )
@@ -166,12 +167,14 @@ END
 -- Final test result output
 IF @test_passed = 1
 BEGIN
-    PRINT 'Test Passed: master_reference is correctly populated and contains no critical null values.';
+    PRINT 'Test Passed: master_reference is correctly populated.';
 END
 ELSE
 BEGIN
     PRINT 'Test Failed: Check output for issues.';
 END
+
+Select * from master_reference
 
 --- master_reference behaves as expected ---
 
