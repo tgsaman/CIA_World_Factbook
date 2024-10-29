@@ -254,6 +254,10 @@ FROM master_reference
 WHERE Region IS NOT NULL 
   AND Name IS NOT NULL 
   AND Population IS NOT NULL;
+
+Update cleansed_data
+Set Name = 'Turkey'
+Where Name = 'Turkey (Turkiye)'
     
 -- Final result to validate data and derived columns
 select * from cleansed_data;
