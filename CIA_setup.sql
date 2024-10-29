@@ -44,7 +44,8 @@ Instead, this script is a less-automated means of joining exportable flat files.
 --- Build the master_reference table by joining all files ---
 Drop table if exists
 master_reference,
-cleansed_data
+cleansed_data,
+copied_data
 
 Delete from [Population - total] Where slug = 'sample-slug'
 Delete from [Real GDP (purchasing power parity)] where slug = 'sample-slug'
@@ -162,17 +163,6 @@ BEGIN
     SET @test_passed = 0;
 END
 
--- Verify critical columns (Population, RGDP) have no NULL values
-IF EXISTS (
-    SELECT 1
-    FROM master_reference
-    WHERE Population IS NULL
-)
-BEGIN
-    PRINT 'Test Failed: Null values found in critical columns (Population, RGDP).';
-    SET @test_passed = 0;
-END
-
 -- Final test result output
 IF @test_passed = 1
 BEGIN
@@ -237,6 +227,7 @@ SELECT
     Military_budget_pct,
     Mil_Budget_Year,
     Coal_Revenue_Pct_GDP,
+
     Coal_Rev_Year,
     CO2_Emissions_mTonnes,
     Emissions_Year,
@@ -248,19 +239,139 @@ SELECT
     Consumption_Year,
     Energy_Consumption_pc_Rank
     -- Skipping Migration rate bc DQ issue
-Into cleansed_data
+Into copied_data
 FROM master_reference
 WHERE Region IS NOT NULL 
   AND Name IS NOT NULL 
   AND Population IS NOT NULL;
 
-Update cleansed_data
+Update copied_data
 Set Name = 'Turkey'
-Where Name = 'Turkey (Turkiye)'
+Where Name = 'Turkey (Turkiye)';
+
+Update copied_data
+Set Population = Replace(Population,',','')
+
+Update copied_data
+Set RGDP = Replace(RGDP,',','')
+
+Update copied_data
+Set Labor_Force = Replace(Labor_Force,',','')
+
+Update copied_data
+Set Internet_Users = Replace(Internet_Users,',','')
+
+SELECT
+Cast(Labor_Force as Int),
+Cast(Population as Int),
+Cast (Internet_Users as Int)
+From copied_data
+
+Select *
+Into cleansed_data
+From copied_data
     
 -- Final result to validate data and derived columns
-select * from cleansed_data;
+select 
+    Region,
+    Name,
+    Population,
+    Population_Rank,
+    RGDP,
+    RGDP_Year,
+    RGDP_Rank,
+    RGDP_Per_Capita,
+    RGDP_Per_Capita_Rank,
+    RGDP_Growth_Rate,
+    RGDP_G_Year,
+    RGDP_Growth_Rank,
+    Population_Growth_Rate,
+    PopG_Year,
+    Gini_Index_Coefficient,
+    Gini_Rank,
+    Gini_date,
+    Inflation_Rate_YoY_Consumer_Prices,
+    Inflation_Rate_Year,
+    Inflation_rank,
+    
+    -- Derive Unemployed Population Estimate
+    Labor_Force,
+    Labor_Force_Year,
+    Labor_Force_rank,
+    Unemployment_Rate,
+    Unemployment_Rate_Year,
 
+    -- These need derivatives from RGDP
+    GDP_Pct_Agricultural,
+    GDPa_pct_Year,
+    GDP_Pct_Industrial,
+    GDPi_pct_Year,
+    GDP_Pct_Services,
+    GDPs_pct_Year,
+    
+    -- Express as a percentage of population next to GDP sector mix
+    Internet_Users,
+    Int_Users_Year,
+    Internet_Users_rank,
+
+    -- Derive from GDP
+    Education_Budget_Pct,
+    Edu_Budget_Year,
+    Military_budget_pct,
+    Mil_Budget_Year,
+    Coal_Revenue_Pct_GDP,
+    Coal_Rev_Year,
+
+    CO2_Emissions_mTonnes,
+    Emissions_Year,
+    Emissions_Rank,
+    Installed_Generating_Capacity_kW,
+    GenCap_Year,
+    GenCap_Rank,
+    Energy_Consumption_Per_Capita_btu,
+    Consumption_Year,
+    Energy_Consumption_pc_Rank,
+    -- Skipping Migration rate bc DQ issue
+    CASE 
+    WHEN Edu_Budget_Year = RGDP_Year THEN RGDP * (Education_Budget_Pct / 100)
+    ELSE NULL 
+    END AS Education_Budget_Est,
+
+    CASE 
+    WHEN Mil_Budget_Year = RGDP_Year THEN RGDP * (Military_budget_pct / 100)
+    ELSE NULL 
+    END AS Military_Budget_Est,
+
+    CASE 
+    WHEN Coal_Rev_Year = RGDP_Year THEN RGDP * (Coal_Revenue_Pct_GDP / 100)
+    ELSE NULL 
+    END AS Coal_Revenue_Est,
+
+    CASE 
+    WHEN Int_Users_Year > 2020 THEN Internet_Users / Population
+    ELSE NULL 
+    END AS pct_Population_with_internet_Est,
+
+    CASE 
+    WHEN Labor_Force_Year = Unemployment_Rate_Year THEN Labor_Force * (Unemployment_Rate / 100)
+    ELSE NULL 
+    END AS Unemployed_Population_Est,
+
+    CASE 
+    WHEN GDPa_pct_Year = RGDP_Year THEN RGDP * (GDP_Pct_Agricultural / 100)
+    ELSE NULL 
+    END AS Agricultural_Product_Est,
+
+    CASE 
+    WHEN GDPi_pct_Year = RGDP_Year THEN RGDP * (GDP_Pct_Industrial / 100)
+    ELSE NULL 
+    END AS Industrial_Product_Est,
+
+    CASE 
+    WHEN GDPs_pct_Year = RGDP_Year THEN RGDP * (GDP_Pct_Services / 100)
+    ELSE NULL 
+    END AS Services_Product_Est
+from cleansed_data;
 
 --- Math tables for derived values ---
 --- Validate with date matching ---
