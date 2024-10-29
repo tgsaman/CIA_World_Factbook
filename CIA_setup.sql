@@ -42,10 +42,9 @@ Instead, this script is a less-automated means of joining exportable flat files.
 
 
 --- Build the master_reference table by joining all files ---
-Drop table if exists
-master_reference,
-cleansed_data,
-copied_data
+Drop table if exists master_reference
+Drop table if exists cleansed_data
+Drop table if exists copied_data
 
 Delete from [Population - total] Where slug = 'sample-slug'
 Delete from [Real GDP (purchasing power parity)] where slug = 'sample-slug'
@@ -61,9 +60,6 @@ VALUES ('sample-slug', 'Sample Region', 'Sample Name', 300000000, '2022', 250);
 
 INSERT INTO [Real GDP per capita] (slug, region, name, value, date_of_information, ranking)
 VALUES ('sample-slug', 'Sample Region', 'Sample Name', 20000, '2022', 250);
-
--- Check that sample data joined correctly in `master_reference`
-DECLARE @test_passed BIT = 1;
 
 select 
 Pop.region as Region,
@@ -103,7 +99,7 @@ Infl.Column_3 as Inflation_Rate_YoY_Consumer_Prices,
 Infl.date_of_information as Inflation_Rate_Year,
 Infl.ranking as Inflation_rank,
 WWW.value as Internet_Users,
-WWW.date_of_information Int_Users_Year,
+WWW.date_of_information as Int_Users_Year,
 WWW.ranking as Internet_Users_rank,
 LaFo.value as Labor_Force,
 LaFo.date_of_information as Labor_Force_Year,
@@ -147,15 +143,17 @@ full join [Youth unemployment rate (ages 15-24)] as yUnemp on yUnemp.slug = Pop.
 ;
 
 --- Unit Test 1 ---
+-- Check that sample data joined correctly in `master_reference`
+DECLARE @test_passed BIT = 1;
 
-DECLARE @expectedSlug NVARCHAR(50) = 'sample-slug';
+DECLARE @expectedRegion NVARCHAR(50) = 'Sample Region';
 DECLARE @expectedPopulation INT = 500000;
 DECLARE @expectedRGDP DECIMAL(18, 2) = 300000000;
 
 IF NOT EXISTS (
     SELECT 1
     FROM master_reference
-    WHERE Region = @expectedSlug
+    WHERE Region = @expectedRegion
       AND Population = @expectedPopulation
       AND RGDP = @expectedRGDP
 )
