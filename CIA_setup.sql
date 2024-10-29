@@ -237,8 +237,9 @@ SELECT
     -- Skipping Migration rate bc DQ issue
 Into copied_data
 FROM master_reference
-WHERE Region IS NOT NULL 
-  AND Name IS NOT NULL 
+WHERE Name <> 'Sample Name'
+  And Name is not null
+  AND Region IS NOT NULL 
   AND Population IS NOT NULL;
 
 Update copied_data
@@ -252,7 +253,9 @@ SELECT
     TRY_CAST(REPLACE(Internet_Users, ',', '') AS DECIMAL(18, 2)) AS Clean_IU
 INTO cleansed_data
 FROM copied_data;
-    
+
+Select * from cleansed_data;
+
 -- Final result to validate data and derived columns
 select 
     Region,
