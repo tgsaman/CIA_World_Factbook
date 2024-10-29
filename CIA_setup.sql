@@ -40,17 +40,13 @@ Instead, this script is a less-automated means of joining exportable flat files.
 
 ---Create Insert Into section for test functionality & ability to add more files in future---
 
+Drop table if exists master_reference;
+Drop table if exists copied_data;
+Drop table if exists cleansed_data;
 
---- Build the master_reference table by joining all files ---
-Drop table if exists master_reference
-Drop table if exists cleansed_data
-Drop table if exists copied_data
-
-Delete from [Population - total] Where slug = 'sample-slug'
-Delete from [Real GDP (purchasing power parity)] where slug = 'sample-slug'
-Delete from [Real GDP per capita] Where slug = 'sample-slug'
-
---- Unit Test 1 Data to ensure joins & nulls are consistent ---
+Delete from [Population - total] Where slug = 'sample-slug';
+Delete from [Real GDP (purchasing power parity)] where slug = 'sample-slug';
+Delete from [Real GDP per capita] Where slug = 'sample-slug';
 
 INSERT INTO [Population - total] (slug, region, name, value, ranking)
 VALUES ('sample-slug', 'Sample Region', 'Sample Name', 500000, 250);
@@ -61,10 +57,12 @@ VALUES ('sample-slug', 'Sample Region', 'Sample Name', 300000000, '2022', 250);
 INSERT INTO [Real GDP per capita] (slug, region, name, value, date_of_information, ranking)
 VALUES ('sample-slug', 'Sample Region', 'Sample Name', 20000, '2022', 250);
 
+--- Build the master_reference table by joining all files ---
+
 select 
 Pop.region as Region,
 Pop.name as Name,
-Pop.value as Population,
+REPLACE(Pop.value, ',', '') as Population, 
 Pop.ranking as Population_Rank,
 RGDPppp.value as RGDP,
 RGDPppp.date_of_information as RGDP_Year,
@@ -98,10 +96,10 @@ Gini.ranking as Gini_Rank,
 Infl.Column_3 as Inflation_Rate_YoY_Consumer_Prices,
 Infl.date_of_information as Inflation_Rate_Year,
 Infl.ranking as Inflation_rank,
-WWW.value as Internet_Users,
+REPLACE(WWW.value, ',', '') as Internet_Users,
 WWW.date_of_information as Int_Users_Year,
 WWW.ranking as Internet_Users_rank,
-LaFo.value as Labor_Force,
+REPLACE(LaFo.value, ',', '') as Labor_Force,
 LaFo.date_of_information as Labor_Force_Year,
 LaFo.ranking as Labor_Force_rank,
 Mil.of_GDP as Military_budget_pct,
@@ -143,9 +141,8 @@ full join [Youth unemployment rate (ages 15-24)] as yUnemp on yUnemp.slug = Pop.
 ;
 
 --- Unit Test 1 ---
--- Check that sample data joined correctly in `master_reference`
+-- Check that data joined correctly in `master_reference`
 DECLARE @test_passed BIT = 1;
-
 DECLARE @expectedRegion NVARCHAR(50) = 'Sample Region';
 DECLARE @expectedPopulation INT = 500000;
 DECLARE @expectedRGDP DECIMAL(18, 2) = 300000000;
@@ -171,8 +168,6 @@ ELSE
 BEGIN
     PRINT 'Test Failed: Check output for issues.';
 END
-
-Select * from master_reference
 
 --- master_reference behaves as expected ---
 
@@ -250,33 +245,19 @@ Update copied_data
 Set Name = 'Turkey'
 Where Name = 'Turkey (Turkiye)';
 
-Update copied_data
-Set Population = Replace(Population,',','')
-
-Update copied_data
-Set RGDP = Replace(RGDP,',','')
-
-Update copied_data
-Set Labor_Force = Replace(Labor_Force,',','')
-
-Update copied_data
-Set Internet_Users = Replace(Internet_Users,',','')
-
 SELECT
-Cast(Labor_Force as Int),
-Cast(Population as Int),
-Cast (Internet_Users as Int)
-From copied_data
-
-Select *
-Into cleansed_data
-From copied_data
+    *,
+    TRY_CAST(REPLACE(Population, ',', '') AS INT) AS Clean_Pop,
+    TRY_CAST(REPLACE(Labor_Force, ',', '') AS DECIMAL(18, 2)) AS Clean_LF,
+    TRY_CAST(REPLACE(Internet_Users, ',', '') AS DECIMAL(18, 2)) AS Clean_IU
+INTO cleansed_data
+FROM copied_data;
     
 -- Final result to validate data and derived columns
 select 
     Region,
     Name,
-    Population,
+    Clean_Pop,
     Population_Rank,
     RGDP,
     RGDP_Year,
@@ -296,7 +277,7 @@ select
     Inflation_rank,
     
     -- Derive Unemployed Population Estimate
-    Labor_Force,
+    Clean_LF,
     Labor_Force_Year,
     Labor_Force_rank,
     Unemployment_Rate,
@@ -311,7 +292,7 @@ select
     GDPs_pct_Year,
     
     -- Express as a percentage of population next to GDP sector mix
-    Internet_Users,
+    Clean_IU,
     Int_Users_Year,
     Internet_Users_rank,
 
@@ -349,12 +330,12 @@ select
     END AS Coal_Revenue_Est,
 
     CASE 
-    WHEN Int_Users_Year > 2020 THEN Internet_Users / Population
+    WHEN Int_Users_Year > 2020 THEN Clean_IU / Clean_Pop
     ELSE NULL 
     END AS pct_Population_with_internet_Est,
 
     CASE 
-    WHEN Labor_Force_Year = Unemployment_Rate_Year THEN Labor_Force * (Unemployment_Rate / 100)
+    WHEN Labor_Force_Year = Unemployment_Rate_Year THEN Clean_LF * (Unemployment_Rate / 100)
     ELSE NULL 
     END AS Unemployed_Population_Est,
 
