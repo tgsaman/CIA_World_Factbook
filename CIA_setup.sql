@@ -356,14 +356,7 @@ select
     END AS Services_Product_Est
 from cleansed_data;
 
---- Math tables for derived values ---
---- Validate with date matching ---
-
---- full join Edu.date_of_information on RGDP.date_of_information
---- RGDP.value * (Edu.of_GDP/100) as Education_Budget
---- DENSE_RANK() Over(Order By RGDP.[value] * (Edu.of_GDP/100) DESC) as Education_Spend_Rank
-
 --- Run tests to ensure functionality ---
---- Non-matching dates ---
---- Negative percentages ---
---- Null values ---
+ --- Non-matching dates ---
+ --- Negative percentages ---
+ --- Null values ---
