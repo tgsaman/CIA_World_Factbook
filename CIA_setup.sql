@@ -1,4 +1,4 @@
---- SQL Server for CIA World Factbook Data ---
+--- === SQL Server for CIA World Factbook Data === ---
 
 /*
 DEVELOPER NOTES: 
@@ -57,7 +57,7 @@ VALUES ('sample-slug', 'Sample Region', 'Sample Name', 300000000, '2022', 250);
 INSERT INTO [Real GDP per capita] (slug, region, name, value, date_of_information, ranking)
 VALUES ('sample-slug', 'Sample Region', 'Sample Name', 20000, '2022', 250);
 
---- Build the master_reference table by joining all files ---
+--- === Build the master_reference table by joining all files === ---
 
 select 
 Pop.region as Region,
@@ -140,7 +140,7 @@ full join [Unemployment rate] as Unemp on Unemp.slug = Pop.slug
 full join [Youth unemployment rate (ages 15-24)] as yUnemp on yUnemp.slug = Pop.slug --- Not included
 ;
 
---- Unit Test 1 ---
+--- === Unit Test 1 === ---
 -- Check that data joined correctly in `master_reference`
 DECLARE @test_passed BIT = 1;
 DECLARE @expectedRegion NVARCHAR(50) = 'Sample Region';
@@ -169,11 +169,13 @@ BEGIN
     PRINT 'Test Failed: Check output for issues.';
 END
 
---- master_reference behaves as expected ---
+--- master_reference behaves as expected
 
---- Copy master table ---
---- Drop test rows ---
---- Cleanse new working table of null rows ---
+--- === copy data from master_refernce for transformation === ---
+
+--- Copy master table
+--- Drop test rows
+--- Cleanse new working table of null rows
 
 SELECT
     Region,
@@ -242,10 +244,13 @@ WHERE Name <> 'Sample Name'
   AND Region IS NOT NULL 
   AND Population IS NOT NULL;
 
+--- === Cleanse dataset for use in Tableau === ---
+--- Rename Turkey for mapping
 Update copied_data
 Set Name = 'Turkey'
 Where Name = 'Turkey (Turkiye)';
 
+--- Remove commas from numerical datasets to enable calculations
 SELECT
     *,
     TRY_CAST(REPLACE(Population, ',', '') AS INT) AS Clean_Pop,
@@ -254,7 +259,7 @@ SELECT
 INTO cleansed_data
 FROM copied_data;
 
--- Final result to validate data and derived columns
+-- Final result to validate data and derive columns
 select 
     Region,
     Name,
@@ -325,7 +330,7 @@ select
     ELSE NULL 
     END AS Military_Budget_Est,
 
-    CASE 
+    CASE --- not included
     WHEN Coal_Rev_Year = RGDP_Year THEN RGDP * (Coal_Revenue_Pct_GDP / 100)
     ELSE NULL 
     END AS Coal_Revenue_Est,
@@ -340,23 +345,123 @@ select
     ELSE NULL 
     END AS Unemployed_Population_Est,
 
-    CASE 
+    CASE --- not included
     WHEN GDPa_pct_Year = RGDP_Year THEN RGDP * (GDP_Pct_Agricultural / 100)
     ELSE NULL 
     END AS Agricultural_Product_Est,
 
-    CASE 
+    CASE --- not included
     WHEN GDPi_pct_Year = RGDP_Year THEN RGDP * (GDP_Pct_Industrial / 100)
     ELSE NULL 
     END AS Industrial_Product_Est,
 
-    CASE 
+    CASE --- not included
     WHEN GDPs_pct_Year = RGDP_Year THEN RGDP * (GDP_Pct_Services / 100)
     ELSE NULL 
     END AS Services_Product_Est
+into derived_data
 from cleansed_data;
 
+--- Insert US Defense Spending Estimate (essential row) to table
+/* Estimate sourcing (the IMF & Department of Defense) linked in visualization*/
+Update derived_data
+Set Military_Budget_Est = 8498000000000
+Where Name = 'United States';
+
+--- === Unit Test 2 === ---
 --- Run tests to ensure functionality ---
  --- Non-matching dates ---
  --- Negative percentages ---
  --- Null values ---
+
+---=== Data Quality Metrics ===---
+drop table if exists data_quality
+drop table if exists dq_completeness
+
+-- Completeness Check for derived_data
+SELECT 
+    COUNT(Name) AS Countries_and_territories,
+
+    -- Completeness checks for each column
+    COUNT(Region) / COUNT(Name) AS Region_completeness,
+    COUNT(Name) / COUNT(Name) AS Name_completeness,
+    COUNT(Clean_Pop) / COUNT(Name) AS Clean_Pop_completeness,
+    COUNT(Population_Rank) / COUNT(Name) AS Population_Rank_completeness,
+    COUNT(RGDP) / COUNT(Name) AS RGDP_completeness,
+    COUNT(RGDP_Year) / COUNT(Name) AS RGDP_Year_completeness,
+    COUNT(RGDP_Rank) / COUNT(Name) AS RGDP_Rank_completeness,
+    COUNT(RGDP_Per_Capita) / COUNT(Name) AS RGDP_Per_Capita_completeness,
+    COUNT(RGDP_Per_Capita_Rank) / COUNT(Name) AS RGDP_Per_Capita_Rank_completeness,
+    COUNT(RGDP_Growth_Rate) / COUNT(Name) AS RGDP_Growth_Rate_completeness,
+    COUNT(RGDP_G_Year) / COUNT(Name) AS RGDP_G_Year_completeness,
+    COUNT(RGDP_Growth_Rank) / COUNT(Name) AS RGDP_Growth_Rank_completeness,
+    COUNT(Population_Growth_Rate) / COUNT(Name) AS Population_Growth_Rate_completeness,
+    COUNT(PopG_Year) / COUNT(Name) AS PopG_Year_completeness,
+    COUNT(Gini_Index_Coefficient) / COUNT(Name) AS Gini_Index_Coefficient_completeness,
+    COUNT(Gini_Rank) / COUNT(Name) AS Gini_Rank_completeness,
+    COUNT(Gini_date) / COUNT(Name) AS Gini_date_completeness,
+    COUNT(Inflation_Rate_YoY_Consumer_Prices) / COUNT(Name) AS Inflation_Rate_YoY_Consumer_Prices_completeness,
+    COUNT(Inflation_Rate_Year) / COUNT(Name) AS Inflation_Rate_Year_completeness,
+    COUNT(Inflation_rank) / COUNT(Name) AS Inflation_rank_completeness,
+    COUNT(Clean_LF) / COUNT(Name) AS Clean_LF_completeness,
+    COUNT(Labor_Force_Year) / COUNT(Name) AS Labor_Force_Year_completeness,
+    COUNT(Labor_Force_rank) / COUNT(Name) AS Labor_Force_rank_completeness,
+    COUNT(Unemployment_Rate) / COUNT(Name) AS Unemployment_Rate_completeness,
+    COUNT(Unemployment_Rate_Year) / COUNT(Name) AS Unemployment_Rate_Year_completeness,
+    COUNT(GDP_Pct_Agricultural) / COUNT(Name) AS GDP_Pct_Agricultural_completeness,
+    COUNT(GDPa_pct_Year) / COUNT(Name) AS GDPa_pct_Year_completeness,
+    COUNT(GDP_Pct_Industrial) / COUNT(Name) AS GDP_Pct_Industrial_completeness,
+    COUNT(GDPi_pct_Year) / COUNT(Name) AS GDPi_pct_Year_completeness,
+    COUNT(GDP_Pct_Services) / COUNT(Name) AS GDP_Pct_Services_completeness,
+    COUNT(GDPs_pct_Year) / COUNT(Name) AS GDPs_pct_Year_completeness,
+    COUNT(Clean_IU) / COUNT(Name) AS Clean_IU_completeness,
+    COUNT(Int_Users_Year) / COUNT(Name) AS Int_Users_Year_completeness,
+    COUNT(Internet_Users_rank) / COUNT(Name) AS Internet_Users_rank_completeness,
+    COUNT(Education_Budget_Pct) / COUNT(Name) AS Education_Budget_Pct_completeness,
+    COUNT(Edu_Budget_Year) / COUNT(Name) AS Edu_Budget_Year_completeness,
+    COUNT(Military_budget_pct) / COUNT(Name) AS Military_budget_pct_completeness,
+    COUNT(Mil_Budget_Year) / COUNT(Name) AS Mil_Budget_Year_completeness,
+    COUNT(Coal_Revenue_Pct_GDP) / COUNT(Name) AS Coal_Revenue_Pct_GDP_completeness,
+    COUNT(Coal_Rev_Year) / COUNT(Name) AS Coal_Rev_Year_completeness,
+    COUNT(CO2_Emissions_mTonnes) / COUNT(Name) AS CO2_Emissions_mTonnes_completeness,
+    COUNT(Emissions_Year) / COUNT(Name) AS Emissions_Year_completeness,
+    COUNT(Emissions_Rank) / COUNT(Name) AS Emissions_Rank_completeness,
+    COUNT(Installed_Generating_Capacity_kW) / COUNT(Name) AS Installed_Generating_Capacity_kW_completeness,
+    COUNT(GenCap_Year) / COUNT(Name) AS GenCap_Year_completeness,
+    COUNT(GenCap_Rank) / COUNT(Name) AS GenCap_Rank_completeness,
+    COUNT(Energy_Consumption_Per_Capita_btu) / COUNT(Name) AS Energy_Consumption_Per_Capita_btu_completeness,
+    COUNT(Consumption_Year) / COUNT(Name) AS Consumption_Year_completeness,
+    COUNT(Energy_Consumption_pc_Rank) / COUNT(Name) AS Energy_Consumption_pc_Rank_completeness,
+    COUNT(Education_Budget_Est) / COUNT(Name) AS Education_Budget_Est_completeness,
+    COUNT(Military_Budget_Est) / COUNT(Name) AS Military_Budget_Est_completeness,
+    COUNT(Coal_Revenue_Est) / COUNT(Name) AS Coal_Revenue_Est_completeness,
+    COUNT(pct_Population_with_internet_Est) / COUNT(Name) AS pct_Population_with_internet_Est_completeness,
+    COUNT(Unemployed_Population_Est) / COUNT(Name) AS Unemployed_Population_Est_completeness,
+    COUNT(Agricultural_Product_Est) / COUNT(Name) AS Agricultural_Product_Est_completeness,
+    COUNT(Industrial_Product_Est) / COUNT(Name) AS Industrial_Product_Est_completeness,
+    COUNT(Services_Product_Est) / COUNT(Name) AS Services_Product_Est_completeness
+into dq_completeness
+FROM derived_data;
+
+SELECT 
+    -- Completeness checks for "_year" or "_Year" columns
+    COUNT(RGDP_Year) / COUNT(Name) AS RGDP_Year_completeness,
+    COUNT(RGDP_G_Year) / COUNT(Name) AS RGDP_G_Year_completeness,
+    COUNT(PopG_Year) / COUNT(Name) AS PopG_Year_completeness,
+    COUNT(Inflation_Rate_Year) / COUNT(Name) AS Inflation_Rate_Year_completeness,
+    COUNT(Labor_Force_Year) / COUNT(Name) AS Labor_Force_Year_completeness,
+    COUNT(Unemployment_Rate_Year) / COUNT(Name) AS Unemployment_Rate_Year_completeness,
+    COUNT(GDPa_pct_Year) / COUNT(Name) AS GDPa_pct_Year_completeness,
+    COUNT(GDPi_pct_Year) / COUNT(Name) AS GDPi_pct_Year_completeness,
+    COUNT(GDPs_pct_Year) / COUNT(Name) AS GDPs_pct_Year_completeness,
+    COUNT(Int_Users_Year) / COUNT(Name) AS Int_Users_Year_completeness,
+    COUNT(Edu_Budget_Year) / COUNT(Name) AS Edu_Budget_Year_completeness,
+    COUNT(Mil_Budget_Year) / COUNT(Name) AS Mil_Budget_Year_completeness,
+    COUNT(Coal_Rev_Year) / COUNT(Name) AS Coal_Rev_Year_completeness,
+    COUNT(Emissions_Year) / COUNT(Name) AS Emissions_Year_completeness,
+    COUNT(GenCap_Year) / COUNT(Name) AS GenCap_Year_completeness,
+    COUNT(Consumption_Year) / COUNT(Name) AS Consumption_Year_completeness
+into dq_timeliness
+from derived_data;
+
+DQ_overall
