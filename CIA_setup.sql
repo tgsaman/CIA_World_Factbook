@@ -443,25 +443,183 @@ SELECT
 into dq_completeness
 FROM derived_data;
 
+-- Timeliness Check for RGDP_Year
 SELECT 
-    -- Completeness checks for "_year" or "_Year" columns
-    COUNT(RGDP_Year) / COUNT(Name) AS RGDP_Year_completeness,
-    COUNT(RGDP_G_Year) / COUNT(Name) AS RGDP_G_Year_completeness,
-    COUNT(PopG_Year) / COUNT(Name) AS PopG_Year_completeness,
-    COUNT(Inflation_Rate_Year) / COUNT(Name) AS Inflation_Rate_Year_completeness,
-    COUNT(Labor_Force_Year) / COUNT(Name) AS Labor_Force_Year_completeness,
-    COUNT(Unemployment_Rate_Year) / COUNT(Name) AS Unemployment_Rate_Year_completeness,
-    COUNT(GDPa_pct_Year) / COUNT(Name) AS GDPa_pct_Year_completeness,
-    COUNT(GDPi_pct_Year) / COUNT(Name) AS GDPi_pct_Year_completeness,
-    COUNT(GDPs_pct_Year) / COUNT(Name) AS GDPs_pct_Year_completeness,
-    COUNT(Int_Users_Year) / COUNT(Name) AS Int_Users_Year_completeness,
-    COUNT(Edu_Budget_Year) / COUNT(Name) AS Edu_Budget_Year_completeness,
-    COUNT(Mil_Budget_Year) / COUNT(Name) AS Mil_Budget_Year_completeness,
-    COUNT(Coal_Rev_Year) / COUNT(Name) AS Coal_Rev_Year_completeness,
-    COUNT(Emissions_Year) / COUNT(Name) AS Emissions_Year_completeness,
-    COUNT(GenCap_Year) / COUNT(Name) AS GenCap_Year_completeness,
-    COUNT(Consumption_Year) / COUNT(Name) AS Consumption_Year_completeness
-into dq_timeliness
-from derived_data;
+    RGDP_Year,
+    COUNT(*) AS RGDP_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS RGDPY_Pct_timely
+INTO RGDP_timeliness
+FROM derived_data
+WHERE RGDP_Year IS NOT NULL
+GROUP BY RGDP_Year
+ORDER BY RGDP_Year DESC;
 
-DQ_overall
+-- Timeliness Check for RGDP_G_Year
+SELECT 
+    RGDP_G_Year,
+    COUNT(*) AS RGDP_G_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS RGDPG_Pct_timely
+INTO RGDP_G_timeliness
+FROM derived_data
+WHERE RGDP_G_Year IS NOT NULL
+GROUP BY RGDP_G_Year
+ORDER BY RGDP_G_Year DESC;
+
+-- Timeliness Check for PopG_Year
+SELECT 
+    PopG_Year,
+    COUNT(*) AS PopG_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS PopG_Pct_timely
+INTO PopG_timeliness
+FROM derived_data
+WHERE PopG_Year IS NOT NULL
+GROUP BY PopG_Year
+ORDER BY PopG_Year DESC;
+
+-- Timeliness Check for Inflation_Rate_Year
+SELECT 
+    Inflation_Rate_Year,
+    COUNT(*) AS Inflation_Rate_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS Inflation_Pct_timely
+INTO Inflation_timeliness
+FROM derived_data
+WHERE Inflation_Rate_Year IS NOT NULL
+GROUP BY Inflation_Rate_Year
+ORDER BY Inflation_Rate_Year DESC;
+
+-- Timeliness Check for Labor_Force_Year
+SELECT 
+    Labor_Force_Year,
+    COUNT(*) AS Labor_Force_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS LaborForce_Pct_timely
+INTO Labor_Force_timeliness
+FROM derived_data
+WHERE Labor_Force_Year IS NOT NULL
+GROUP BY Labor_Force_Year
+ORDER BY Labor_Force_Year DESC;
+
+-- Timeliness Check for Unemployment_Rate_Year
+SELECT 
+    Unemployment_Rate_Year,
+    COUNT(*) AS Unemployment_Rate_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS Unemployment_Pct_timely
+INTO Unemployment_timeliness
+FROM derived_data
+WHERE Unemployment_Rate_Year IS NOT NULL
+GROUP BY Unemployment_Rate_Year
+ORDER BY Unemployment_Rate_Year DESC;
+
+-- Timeliness Check for GDPa_pct_Year
+SELECT 
+    GDPa_pct_Year,
+    COUNT(*) AS GDPa_pct_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS GDPa_Pct_timely
+INTO GDPa_pct_timeliness
+FROM derived_data
+WHERE GDPa_pct_Year IS NOT NULL
+GROUP BY GDPa_pct_Year
+ORDER BY GDPa_pct_Year DESC;
+
+-- Timeliness Check for GDPi_pct_Year
+SELECT 
+    GDPi_pct_Year,
+    COUNT(*) AS GDPi_pct_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS GDPi_Pct_timely
+INTO GDPi_pct_timeliness
+FROM derived_data
+WHERE GDPi_pct_Year IS NOT NULL
+GROUP BY GDPi_pct_Year
+ORDER BY GDPi_pct_Year DESC;
+
+-- Timeliness Check for GDPs_pct_Year
+SELECT 
+    GDPs_pct_Year,
+    COUNT(*) AS GDPs_pct_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS GDPs_Pct_timely
+INTO GDPs_pct_timeliness
+FROM derived_data
+WHERE GDPs_pct_Year IS NOT NULL
+GROUP BY GDPs_pct_Year
+ORDER BY GDPs_pct_Year DESC;
+
+-- Timeliness Check for Int_Users_Year
+SELECT 
+    Int_Users_Year,
+    COUNT(*) AS Int_Users_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS Int_Users_Pct_timely
+INTO Int_Users_timeliness
+FROM derived_data
+WHERE Int_Users_Year IS NOT NULL
+GROUP BY Int_Users_Year
+ORDER BY Int_Users_Year DESC;
+
+-- Timeliness Check for Edu_Budget_Year
+SELECT 
+    Edu_Budget_Year,
+    COUNT(*) AS Edu_Budget_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS Edu_Budget_Pct_timely
+INTO Edu_Budget_timeliness
+FROM derived_data
+WHERE Edu_Budget_Year IS NOT NULL
+GROUP BY Edu_Budget_Year
+ORDER BY Edu_Budget_Year DESC;
+
+-- Timeliness Check for Mil_Budget_Year
+SELECT 
+    Mil_Budget_Year,
+    COUNT(*) AS Mil_Budget_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS Mil_Budget_Pct_timely
+INTO Mil_Budget_timeliness
+FROM derived_data
+WHERE Mil_Budget_Year IS NOT NULL
+GROUP BY Mil_Budget_Year
+ORDER BY Mil_Budget_Year DESC;
+
+-- Timeliness Check for Coal_Rev_Year
+SELECT 
+    Coal_Rev_Year,
+    COUNT(*) AS Coal_Rev_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS Coal_Rev_Pct_timely
+INTO Coal_Rev_timeliness
+FROM derived_data
+WHERE Coal_Rev_Year IS NOT NULL
+GROUP BY Coal_Rev_Year
+ORDER BY Coal_Rev_Year DESC;
+
+-- Timeliness Check for Emissions_Year
+SELECT 
+    Emissions_Year,
+    COUNT(*) AS Emissions_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS Emissions_Pct_timely
+INTO Emissions_timeliness
+FROM derived_data
+WHERE Emissions_Year IS NOT NULL
+GROUP BY Emissions_Year
+ORDER BY Emissions_Year DESC;
+
+-- Timeliness Check for GenCap_Year
+SELECT 
+    GenCap_Year,
+    COUNT(*) AS GenCap_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS GenCap_Pct_timely
+INTO GenCap_timeliness
+FROM derived_data
+WHERE GenCap_Year IS NOT NULL
+GROUP BY GenCap_Year
+ORDER BY GenCap_Year DESC;
+
+-- Timeliness Check for Consumption_Year
+SELECT 
+    Consumption_Year,
+    COUNT(*) AS Consumption_Year_Count,
+    CAST(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM derived_data) AS DECIMAL(5, 2)) AS Consumption_Pct_timely
+INTO Consumption_timeliness
+FROM derived_data
+WHERE Consumption_Year IS NOT NULL
+GROUP BY Consumption_Year
+ORDER BY Consumption_Year DESC;
+
+select*
+from RGDP_timeliness left join RGDP_g_timeliness on RGDP_timeliness.RGDP_Year = RGDP_G_timeliness.RGDP_G_Year
+
+---DQ_overall
