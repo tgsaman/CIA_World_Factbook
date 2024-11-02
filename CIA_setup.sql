@@ -256,7 +256,23 @@ SELECT
     *,
     TRY_CAST(REPLACE(Population, ',', '') AS INT) AS Clean_Pop,
     TRY_CAST(REPLACE(Labor_Force, ',', '') AS DECIMAL(18, 2)) AS Clean_LF,
-    TRY_CAST(REPLACE(Internet_Users, ',', '') AS DECIMAL(18, 2)) AS Clean_IU
+    TRY_CAST(REPLACE(Internet_Users, ',', '') AS DECIMAL(18, 2)) AS Clean_IU,
+    TRY_CAST(LEFT(RGDP_Year, 4) AS INT) AS RGDP_y_valid,
+    TRY_CAST(LEFT(RGDP_G_Year, 4) AS INT) AS RGDP_G_y_valid,
+    TRY_CAST(LEFT(PopG_Year, 4) AS INT) AS PopG_y_valid,
+    TRY_CAST(LEFT(Inflation_Rate_Year, 4) AS INT) AS Inflation_Rate_y_valid,
+    TRY_CAST(LEFT(Labor_Force_Year, 4) AS INT) AS Labor_Force_y_valid,
+    TRY_CAST(LEFT(Unemployment_Rate_Year, 4) AS INT) AS Unemployment_Rate_y_valid,
+    TRY_CAST(LEFT(GDPa_pct_Year, 4) AS INT) AS GDPa_pct_y_valid,
+    TRY_CAST(LEFT(GDPi_pct_Year, 4) AS INT) AS GDPi_pct_y_valid,
+    TRY_CAST(LEFT(GDPs_pct_Year, 4) AS INT) AS GDPs_pct_y_valid,
+    TRY_CAST(LEFT(Int_Users_Year, 4) AS INT) AS Int_Users_y_valid,
+    TRY_CAST(LEFT(Edu_Budget_Year, 4) AS INT) AS Edu_Budget_y_valid,
+    TRY_CAST(LEFT(Mil_Budget_Year, 4) AS INT) AS Mil_Budget_y_valid,
+    TRY_CAST(LEFT(Coal_Rev_Year, 4) AS INT) AS Coal_Rev_y_valid,
+    TRY_CAST(LEFT(Emissions_Year, 4) AS INT) AS Emissions_y_valid,
+    TRY_CAST(LEFT(GenCap_Year, 4) AS INT) AS GenCap_y_valid,
+    TRY_CAST(LEFT(Consumption_Year, 4) AS INT) AS Consumption_y_valid
 INTO cleansed_data
 FROM copied_data;
 
