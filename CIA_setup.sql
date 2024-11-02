@@ -43,6 +43,7 @@ Instead, this script is a less-automated means of joining exportable flat files.
 Drop table if exists master_reference;
 Drop table if exists copied_data;
 Drop table if exists cleansed_data;
+drop table if exists derived_data;
 
 Delete from [Population - total] Where slug = 'sample-slug';
 Delete from [Real GDP (purchasing power parity)] where slug = 'sample-slug';
@@ -370,6 +371,7 @@ Where Name = 'United States';
 
 --- === Unit Test 2 === ---
 --- Run tests to ensure functionality ---
- --- Non-matching dates ---
- --- Negative percentages ---
- --- Null values ---
+ --- validity transformations
+ --- Non-matching dates
+ --- Negative percentages 
+ --- Null values

@@ -1,6 +1,12 @@
 ---=== Data Quality Metrics ===---
 drop table if exists data_quality
+
+
+
 drop table if exists dq_completeness
+
+DROP TABLE IF EXISTS dq_validity
+
 drop table if exists dq_timeliness
 DROP TABLE IF EXISTS RGDP_timeliness;
 DROP TABLE IF EXISTS RGDP_G_timeliness;
@@ -84,6 +90,8 @@ SELECT
     COUNT(Services_Product_Est) / COUNT(Name) AS Services_Product_Est_completeness
 into dq_completeness
 FROM derived_data;
+
+--- Validity check for derived_data
 
 -- Timeliness Check for RGDP_Year
 SELECT 
