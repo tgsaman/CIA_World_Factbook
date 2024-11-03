@@ -1,49 +1,13 @@
 --- === SQL Server for CIA World Factbook Data === ---
 
-/*
-DEVELOPER NOTES: 
-
-Below is a SQL script that transforms CSV files from the CIA World Factbook website for use in Tableau.
-
-This is an example of a SQL script that can ingest, test, and export raw CSV data into 
-a relational, clean format.
-
-SETUP & ETL:
-
-SQL Queries were run on a contained server using Docker. 
-
-Data ingestion to SQL was achieved using Azure Data Studio's GUI; this is not my preferred method.
-Ideally, I'd have an automated pipeline to show off using Airflow. However: 
-The CIA does not provide any other exportables beyond static CSV files. Each has confusing
-columns and each table, while related, has no relational structure that can be exported.
-
-This Docker SQL script was therefore the fastest way to get a clean dataset for my Tableau dashboard.
-
-DATA QUALITY:
-
-All data was obtained from the CIA World Factbook website, linked in the Dashboard under "Data Source".
-
-Notably, the migrant data table is basically unusable, as the figures were not calculated correctly: 
-    Both Ukraine and Peru are estimated to be losing people to migration right now,
-    at about ~35 per 1,000 for Ukraine and ~1.5 per 1,000 for Peru. Unfortunately, in the CIA's table
-    Ukraine has a positive migration rate; ie. Ukraine is erronously listed as gaining ~35 people per 1,000.
-    Using Peru as a benchmark to read the table ("maybe they're all flipped from negative?") you can see that
-    some migration rates were calculated correctly [(Immigration - Emigration)/Population], and others were
-    flipped [(Emigration - Immigration)/Population]. The entire migration table needs to be redone by the CIA 
-    to get correct values.
-
-Finally, the CIA does not provide historical data beyond three years, and even then, it's in PDF form
-optimized for print. If I was able to access historical, nested data for each country, I'd
-be able to make a table for each year and animate changes over time, which would have been fun.
-Instead, this script is a less-automated means of joining exportable flat files.
-*/
-
 ---Create Insert Into section for test functionality & ability to add more files in future---
 
 Drop table if exists master_reference;
 Drop table if exists copied_data;
 Drop table if exists cleansed_data;
 drop table if exists derived_data;
+
+---Create test rows for Unit Test 1
 
 Delete from [Population - total] Where slug = 'sample-slug';
 Delete from [Real GDP (purchasing power parity)] where slug = 'sample-slug';
@@ -380,7 +344,7 @@ into derived_data
 from cleansed_data;
 
 --- Insert US Defense Spending Estimate (essential row) to table
-/* Estimate sourcing (the IMF & Department of Defense) linked in visualization*/
+/* Estimate sourcing (Department of Defense) linked in visualization*/
 Update derived_data
 Set Military_Budget_Est = 8498000000000
 Where Name = 'United States';

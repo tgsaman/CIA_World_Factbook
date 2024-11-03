@@ -1,3 +1,24 @@
+/*
+
+DATA QUALITY:
+
+All data was obtained from the CIA World Factbook website, linked in the Dashboard under "Data Source".
+
+Notably, the migrant data table is basically unusable, as the figures were not calculated correctly: 
+    Both Ukraine and Peru are estimated to be losing people to migration right now,
+    at about ~35 per 1,000 for Ukraine and ~1.5 per 1,000 for Peru. Unfortunately, in the CIA's table
+    Ukraine has a positive migration rate; ie. Ukraine is erronously listed as gaining ~35 people per 1,000.
+    Using Peru as a benchmark to read the table ("maybe they're all flipped from negative?") you can see that
+    some migration rates were calculated correctly [(Immigration - Emigration)/Population], and others were
+    flipped [(Emigration - Immigration)/Population]. The entire migration table needs to be redone by the CIA 
+    to get correct values.
+
+Finally, the CIA does not provide historical data beyond three years, and even then, it's in PDF form
+optimized for print. If I was able to access historical, nested data for each country, I'd
+be able to make a table for each year and animate changes over time, which would have been fun.
+Instead, this script is a less-automated means of joining exportable flat files.
+*/
+
 ---=== Data Quality Metrics ===---
 drop table if exists data_quality;
 
@@ -42,66 +63,67 @@ select * from dq_validity;
 SELECT 
     COUNT(Name) AS Countries_and_territories,
 
-    -- Completeness checks for each column
-    COUNT(Region) / COUNT(Name) AS Region_completeness,
-    COUNT(Name) / COUNT(Name) AS Name_completeness,
-    COUNT(Clean_Pop) / COUNT(Name) AS Clean_Pop_completeness,
-    COUNT(Population_Rank) / COUNT(Name) AS Population_Rank_completeness,
-    COUNT(RGDP) / COUNT(Name) AS RGDP_completeness,
-    COUNT(RGDP_Year) / COUNT(Name) AS RGDP_Year_completeness,
-    COUNT(RGDP_Rank) / COUNT(Name) AS RGDP_Rank_completeness,
-    COUNT(RGDP_Per_Capita) / COUNT(Name) AS RGDP_Per_Capita_completeness,
-    COUNT(RGDP_Per_Capita_Rank) / COUNT(Name) AS RGDP_Per_Capita_Rank_completeness,
-    COUNT(RGDP_Growth_Rate) / COUNT(Name) AS RGDP_Growth_Rate_completeness,
-    COUNT(RGDP_G_Year) / COUNT(Name) AS RGDP_G_Year_completeness,
-    COUNT(RGDP_Growth_Rank) / COUNT(Name) AS RGDP_Growth_Rank_completeness,
-    COUNT(Population_Growth_Rate) / COUNT(Name) AS Population_Growth_Rate_completeness,
-    COUNT(PopG_Year) / COUNT(Name) AS PopG_Year_completeness,
-    COUNT(Gini_Index_Coefficient) / COUNT(Name) AS Gini_Index_Coefficient_completeness,
-    COUNT(Gini_Rank) / COUNT(Name) AS Gini_Rank_completeness,
-    COUNT(Gini_date) / COUNT(Name) AS Gini_date_completeness,
-    COUNT(Inflation_Rate_YoY_Consumer_Prices) / COUNT(Name) AS Inflation_Rate_YoY_Consumer_Prices_completeness,
-    COUNT(Inflation_Rate_Year) / COUNT(Name) AS Inflation_Rate_Year_completeness,
-    COUNT(Inflation_rank) / COUNT(Name) AS Inflation_rank_completeness,
-    COUNT(Clean_LF) / COUNT(Name) AS Clean_LF_completeness,
-    COUNT(Labor_Force_Year) / COUNT(Name) AS Labor_Force_Year_completeness,
-    COUNT(Labor_Force_rank) / COUNT(Name) AS Labor_Force_rank_completeness,
-    COUNT(Unemployment_Rate) / COUNT(Name) AS Unemployment_Rate_completeness,
-    COUNT(Unemployment_Rate_Year) / COUNT(Name) AS Unemployment_Rate_Year_completeness,
-    COUNT(GDP_Pct_Agricultural) / COUNT(Name) AS GDP_Pct_Agricultural_completeness,
-    COUNT(GDPa_pct_Year) / COUNT(Name) AS GDPa_pct_Year_completeness,
-    COUNT(GDP_Pct_Industrial) / COUNT(Name) AS GDP_Pct_Industrial_completeness,
-    COUNT(GDPi_pct_Year) / COUNT(Name) AS GDPi_pct_Year_completeness,
-    COUNT(GDP_Pct_Services) / COUNT(Name) AS GDP_Pct_Services_completeness,
-    COUNT(GDPs_pct_Year) / COUNT(Name) AS GDPs_pct_Year_completeness,
-    COUNT(Clean_IU) / COUNT(Name) AS Clean_IU_completeness,
-    COUNT(Int_Users_Year) / COUNT(Name) AS Int_Users_Year_completeness,
-    COUNT(Internet_Users_rank) / COUNT(Name) AS Internet_Users_rank_completeness,
-    COUNT(Education_Budget_Pct) / COUNT(Name) AS Education_Budget_Pct_completeness,
-    COUNT(Edu_Budget_Year) / COUNT(Name) AS Edu_Budget_Year_completeness,
-    COUNT(Military_budget_pct) / COUNT(Name) AS Military_budget_pct_completeness,
-    COUNT(Mil_Budget_Year) / COUNT(Name) AS Mil_Budget_Year_completeness,
-    COUNT(Coal_Revenue_Pct_GDP) / COUNT(Name) AS Coal_Revenue_Pct_GDP_completeness,
-    COUNT(Coal_Rev_Year) / COUNT(Name) AS Coal_Rev_Year_completeness,
-    COUNT(CO2_Emissions_mTonnes) / COUNT(Name) AS CO2_Emissions_mTonnes_completeness,
-    COUNT(Emissions_Year) / COUNT(Name) AS Emissions_Year_completeness,
-    COUNT(Emissions_Rank) / COUNT(Name) AS Emissions_Rank_completeness,
-    COUNT(Installed_Generating_Capacity_kW) / COUNT(Name) AS Installed_Generating_Capacity_kW_completeness,
-    COUNT(GenCap_Year) / COUNT(Name) AS GenCap_Year_completeness,
-    COUNT(GenCap_Rank) / COUNT(Name) AS GenCap_Rank_completeness,
-    COUNT(Energy_Consumption_Per_Capita_btu) / COUNT(Name) AS Energy_Consumption_Per_Capita_btu_completeness,
-    COUNT(Consumption_Year) / COUNT(Name) AS Consumption_Year_completeness,
-    COUNT(Energy_Consumption_pc_Rank) / COUNT(Name) AS Energy_Consumption_pc_Rank_completeness,
-    COUNT(Education_Budget_Est) / COUNT(Name) AS Education_Budget_Est_completeness,
-    COUNT(Military_Budget_Est) / COUNT(Name) AS Military_Budget_Est_completeness,
-    COUNT(Coal_Revenue_Est) / COUNT(Name) AS Coal_Revenue_Est_completeness,
-    COUNT(pct_Population_with_internet_Est) / COUNT(Name) AS pct_Population_with_internet_Est_completeness,
-    COUNT(Unemployed_Population_Est) / COUNT(Name) AS Unemployed_Population_Est_completeness,
-    COUNT(Agricultural_Product_Est) / COUNT(Name) AS Agricultural_Product_Est_completeness,
-    COUNT(Industrial_Product_Est) / COUNT(Name) AS Industrial_Product_Est_completeness,
-    COUNT(Services_Product_Est) / COUNT(Name) AS Services_Product_Est_completeness
-into dq_completeness
+    -- Completeness checks for each column as float values
+    CAST(COUNT(Region) AS FLOAT) / COUNT(Name) AS Region_completeness,
+    CAST(COUNT(Name) AS FLOAT) / COUNT(Name) AS Name_completeness,
+    CAST(COUNT(Clean_Pop) AS FLOAT) / COUNT(Name) AS Clean_Pop_completeness,
+    CAST(COUNT(Population_Rank) AS FLOAT) / COUNT(Name) AS Population_Rank_completeness,
+    CAST(COUNT(RGDP) AS FLOAT) / COUNT(Name) AS RGDP_completeness,
+    CAST(COUNT(RGDP_Year) AS FLOAT) / COUNT(Name) AS RGDP_Year_completeness,
+    CAST(COUNT(RGDP_Rank) AS FLOAT) / COUNT(Name) AS RGDP_Rank_completeness,
+    CAST(COUNT(RGDP_Per_Capita) AS FLOAT) / COUNT(Name) AS RGDP_Per_Capita_completeness,
+    CAST(COUNT(RGDP_Per_Capita_Rank) AS FLOAT) / COUNT(Name) AS RGDP_Per_Capita_Rank_completeness,
+    CAST(COUNT(RGDP_Growth_Rate) AS FLOAT) / COUNT(Name) AS RGDP_Growth_Rate_completeness,
+    CAST(COUNT(RGDP_G_Year) AS FLOAT) / COUNT(Name) AS RGDP_G_Year_completeness,
+    CAST(COUNT(RGDP_Growth_Rank) AS FLOAT) / COUNT(Name) AS RGDP_Growth_Rank_completeness,
+    CAST(COUNT(Population_Growth_Rate) AS FLOAT) / COUNT(Name) AS Population_Growth_Rate_completeness,
+    CAST(COUNT(PopG_Year) AS FLOAT) / COUNT(Name) AS PopG_Year_completeness,
+    CAST(COUNT(Gini_Index_Coefficient) AS FLOAT) / COUNT(Name) AS Gini_Index_Coefficient_completeness,
+    CAST(COUNT(Gini_Rank) AS FLOAT) / COUNT(Name) AS Gini_Rank_completeness,
+    CAST(COUNT(Gini_date) AS FLOAT) / COUNT(Name) AS Gini_date_completeness,
+    CAST(COUNT(Inflation_Rate_YoY_Consumer_Prices) AS FLOAT) / COUNT(Name) AS Inflation_Rate_YoY_Consumer_Prices_completeness,
+    CAST(COUNT(Inflation_Rate_Year) AS FLOAT) / COUNT(Name) AS Inflation_Rate_Year_completeness,
+    CAST(COUNT(Inflation_rank) AS FLOAT) / COUNT(Name) AS Inflation_rank_completeness,
+    CAST(COUNT(Clean_LF) AS FLOAT) / COUNT(Name) AS Clean_LF_completeness,
+    CAST(COUNT(Labor_Force_Year) AS FLOAT) / COUNT(Name) AS Labor_Force_Year_completeness,
+    CAST(COUNT(Labor_Force_rank) AS FLOAT) / COUNT(Name) AS Labor_Force_rank_completeness,
+    CAST(COUNT(Unemployment_Rate) AS FLOAT) / COUNT(Name) AS Unemployment_Rate_completeness,
+    CAST(COUNT(Unemployment_Rate_Year) AS FLOAT) / COUNT(Name) AS Unemployment_Rate_Year_completeness,
+    CAST(COUNT(GDP_Pct_Agricultural) AS FLOAT) / COUNT(Name) AS GDP_Pct_Agricultural_completeness,
+    CAST(COUNT(GDPa_pct_Year) AS FLOAT) / COUNT(Name) AS GDPa_pct_Year_completeness,
+    CAST(COUNT(GDP_Pct_Industrial) AS FLOAT) / COUNT(Name) AS GDP_Pct_Industrial_completeness,
+    CAST(COUNT(GDPi_pct_Year) AS FLOAT) / COUNT(Name) AS GDPi_pct_Year_completeness,
+    CAST(COUNT(GDP_Pct_Services) AS FLOAT) / COUNT(Name) AS GDP_Pct_Services_completeness,
+    CAST(COUNT(GDPs_pct_Year) AS FLOAT) / COUNT(Name) AS GDPs_pct_Year_completeness,
+    CAST(COUNT(Clean_IU) AS FLOAT) / COUNT(Name) AS Clean_IU_completeness,
+    CAST(COUNT(Int_Users_Year) AS FLOAT) / COUNT(Name) AS Int_Users_Year_completeness,
+    CAST(COUNT(Internet_Users_rank) AS FLOAT) / COUNT(Name) AS Internet_Users_rank_completeness,
+    CAST(COUNT(Education_Budget_Pct) AS FLOAT) / COUNT(Name) AS Education_Budget_Pct_completeness,
+    CAST(COUNT(Edu_Budget_Year) AS FLOAT) / COUNT(Name) AS Edu_Budget_Year_completeness,
+    CAST(COUNT(Military_budget_pct) AS FLOAT) / COUNT(Name) AS Military_budget_pct_completeness,
+    CAST(COUNT(Mil_Budget_Year) AS FLOAT) / COUNT(Name) AS Mil_Budget_Year_completeness,
+    CAST(COUNT(Coal_Revenue_Pct_GDP) AS FLOAT) / COUNT(Name) AS Coal_Revenue_Pct_GDP_completeness,
+    CAST(COUNT(Coal_Rev_Year) AS FLOAT) / COUNT(Name) AS Coal_Rev_Year_completeness,
+    CAST(COUNT(CO2_Emissions_mTonnes) AS FLOAT) / COUNT(Name) AS CO2_Emissions_mTonnes_completeness,
+    CAST(COUNT(Emissions_Year) AS FLOAT) / COUNT(Name) AS Emissions_Year_completeness,
+    CAST(COUNT(Emissions_Rank) AS FLOAT) / COUNT(Name) AS Emissions_Rank_completeness,
+    CAST(COUNT(Installed_Generating_Capacity_kW) AS FLOAT) / COUNT(Name) AS Installed_Generating_Capacity_kW_completeness,
+    CAST(COUNT(GenCap_Year) AS FLOAT) / COUNT(Name) AS GenCap_Year_completeness,
+    CAST(COUNT(GenCap_Rank) AS FLOAT) / COUNT(Name) AS GenCap_Rank_completeness,
+    CAST(COUNT(Energy_Consumption_Per_Capita_btu) AS FLOAT) / COUNT(Name) AS Energy_Consumption_Per_Capita_btu_completeness,
+    CAST(COUNT(Consumption_Year) AS FLOAT) / COUNT(Name) AS Consumption_Year_completeness,
+    CAST(COUNT(Energy_Consumption_pc_Rank) AS FLOAT) / COUNT(Name) AS Energy_Consumption_pc_Rank_completeness,
+    CAST(COUNT(Education_Budget_Est) AS FLOAT) / COUNT(Name) AS Education_Budget_Est_completeness,
+    CAST(COUNT(Military_Budget_Est) AS FLOAT) / COUNT(Name) AS Military_Budget_Est_completeness,
+    CAST(COUNT(Coal_Revenue_Est) AS FLOAT) / COUNT(Name) AS Coal_Revenue_Est_completeness,
+    CAST(COUNT(pct_Population_with_internet_Est) AS FLOAT) / COUNT(Name) AS pct_Population_with_internet_Est_completeness,
+    CAST(COUNT(Unemployed_Population_Est) AS FLOAT) / COUNT(Name) AS Unemployed_Population_Est_completeness,
+    CAST(COUNT(Agricultural_Product_Est) AS FLOAT) / COUNT(Name) AS Agricultural_Product_Est_completeness,
+    CAST(COUNT(Industrial_Product_Est) AS FLOAT) / COUNT(Name) AS Industrial_Product_Est_completeness,
+    CAST(COUNT(Services_Product_Est) AS FLOAT) / COUNT(Name) AS Services_Product_Est_completeness
+INTO dq_completeness
 FROM derived_data;
+
 
 --- Validity check for derived_data
 -- Timeliness Check for RGDP_y_valid
@@ -301,4 +323,6 @@ FROM RGDP_timeliness
     LEFT JOIN Consumption_timeliness on RGDP_timeliness.RGDP_y_valid = Consumption_timeliness.Consumption_y_valid
 ORDER BY RGDP_timeliness.RGDP_y_valid DESC;
 
-select * from DQ_timeliness
+select * from DQ_timeliness;
+select * from dq_completeness;
+select * from dq_validity;
