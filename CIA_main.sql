@@ -105,38 +105,7 @@ full join [Unemployment rate] as Unemp on Unemp.slug = Pop.slug
 full join [Youth unemployment rate (ages 15-24)] as yUnemp on yUnemp.slug = Pop.slug --- Not included
 ;
 
---- === Unit Test 1 === ---
--- Check that data joined correctly in `master_reference`
-DECLARE @test_passed BIT = 1;
-DECLARE @expectedRegion NVARCHAR(50) = 'Sample Region';
-DECLARE @expectedPopulation INT = 500000;
-DECLARE @expectedRGDP DECIMAL(18, 2) = 300000000;
-
-IF NOT EXISTS (
-    SELECT 1
-    FROM master_reference
-    WHERE Region = @expectedRegion
-      AND Population = @expectedPopulation
-      AND RGDP = @expectedRGDP
-)
-BEGIN
-    PRINT 'Test Failed: Expected data not found in master_reference.';
-    SET @test_passed = 0;
-END
-
--- Final test result output
-IF @test_passed = 1
-BEGIN
-    PRINT 'Test Passed: master_reference is correctly populated.';
-END
-ELSE
-BEGIN
-    PRINT 'Test Failed: Check output for issues.';
-END
-
---- master_reference behaves as expected
-
---- === copy data from master_refernce for transformation === ---
+--- === Unit Test 1 conducted here: see logger === ---
 
 --- Copy master table
 --- Drop test rows
@@ -239,6 +208,8 @@ SELECT
     TRY_CAST(LEFT(Consumption_Year, 4) AS INT) AS Consumption_y_valid
 INTO cleansed_data
 FROM copied_data;
+
+---=== Validity of data types assessed in DQ script ===---
 
 -- Final result to validate data and derive columns
 select 
@@ -349,9 +320,4 @@ Update derived_data
 Set Military_Budget_Est = 8498000000000
 Where Name = 'United States';
 
---- === Unit Test 2 === ---
---- Run tests to ensure functionality ---
- --- validity transformations
- --- Non-matching dates
- --- Negative percentages 
- --- Null values
+
