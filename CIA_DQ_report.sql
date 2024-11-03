@@ -124,6 +124,9 @@ SELECT
 INTO dq_completeness
 FROM derived_data;
 
+--- summary analysis for completeness, average of all rows in dq_completeness
+--- complete similar summaries for validity, compare validity to set values, and sum all counts of year regardless of column
+--- pie chart each as overall timely, valid, and complete
 
 --- Validity check for derived_data
 -- Timeliness Check for RGDP_y_valid
