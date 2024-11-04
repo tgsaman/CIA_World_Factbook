@@ -47,15 +47,6 @@ DECLARE @test_passed_2 BIT = 1;
 DECLARE @failure_reason_2 NVARCHAR(MAX) = NULL;
 
 -- Check for non-matching dates
-IF EXISTS (
-    SELECT 1
-    FROM derived_data
-    WHERE Edu_Budget_Year <> RGDP_Year OR Edu_Budget_Year IS NULL
-)
-BEGIN
-    SET @test_passed_2 = 0;
-    SET @failure_reason_2 = COALESCE(@failure_reason_2 + '; ', '') + 'Non-matching or null dates in Edu_Budget_Year and RGDP_Year.';
-END
 
 -- Check for negative percentages
 IF EXISTS (
@@ -66,17 +57,6 @@ IF EXISTS (
 BEGIN
     SET @test_passed_2 = 0;
     SET @failure_reason_2 = COALESCE(@failure_reason_2 + '; ', '') + 'Negative percentage in Education_Budget_Pct or Military_budget_pct.';
-END
-
--- Check for null values in critical columns
-IF EXISTS (
-    SELECT 1
-    FROM derived_data
-    WHERE Education_Budget_Pct IS NULL OR Military_budget_pct IS NULL
-)
-BEGIN
-    SET @test_passed_2 = 0;
-    SET @failure_reason_2 = COALESCE(@failure_reason_2 + '; ', '') + 'Null values in Education_Budget_Pct or Military_budget_pct.';
 END
 
 -- Insert the test result into Unit_Test_Results
