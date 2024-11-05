@@ -457,7 +457,7 @@ ORDER BY RGDP_timeliness.RGDP_y_valid DESC;
 
 WITH UnpivotedYears AS (
     SELECT 
-        UnpivotedYear AS Year
+        ISNULL(Year, 0) AS Year
     FROM 
         DQ_timeliness_raw
     UNPIVOT (
@@ -477,15 +477,26 @@ WITH UnpivotedYears AS (
         Emissions_y_valid,
         GenCap_y_valid,
         Consumption_y_valid)
-    ) AS Unpvt),
+    ) AS Unpvt
+),
 dq_timeliness AS (
     SELECT 
         Year,
         COUNT(*) AS Occurrences,
-        COUNT(*) * 100.0 / (SELECT COUNT(*) * (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
-                                               WHERE TABLE_NAME = 'DQ_timeliness_raw' 
-                                               AND COLUMN_NAME LIKE '%_Year%')
-                            FROM DQ_timeliness_raw) AS Percentage_Frequency
+        CASE
+            WHEN ((SELECT COUNT(*) 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME = 'DQ_timeliness_raw' 
+                AND COLUMN_NAME LIKE '%_y_valid%') *
+                (SELECT COUNT(*) FROM DQ_timeliness_raw)) > 0
+            THEN COUNT(*) * 100.0 / 
+                ((SELECT COUNT (*)
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_NAME = 'DQ_timeliness_raw'
+                AND COLUMN_NAME LIKE '%_y_valid%') *
+                (SELECT COUNT(*) FROM DQ_timeliness_raw))
+            ELSE 0
+        END AS Percentage_Frequency
     FROM 
         UnpivotedYears
     GROUP BY 
@@ -502,6 +513,6 @@ ORDER BY
     Year;*/
 
 
-select * from DQ_timeliness;
+select * from DQ_timeliness order by [Year];
 select * from dq_completeness;
 select * from dq_validity;
