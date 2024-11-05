@@ -48,7 +48,145 @@ DROP TABLE IF EXISTS Consumption_timeliness;
 SELECT 
     COLUMN_NAME AS ColumnName,
     DATA_TYPE AS DataType,
-    CHARACTER_MAXIMUM_LENGTH AS MaxLength
+    CASE
+        --- Test string values' validitiy
+        WHEN COLUMN_NAME IN ('REGION', 'NAME')
+        AND DATA_TYPE IN ('VARCHAR', 'NVARCHAR') THEN 1
+        WHEN COLUMN_NAME IN ('REGION', 'NAME')
+        AND DATA_TYPE NOT IN ('VARCHAR', 'NVARCHAR') THEN 0
+        
+        --- Test Integer values' validity
+        WHEN COLUMN_NAME IN ('Population', 
+        'Clean_Pop', 
+        'Labor_Force', 
+        'Clean_LF', 
+        'Internet_Users', 
+        'Clean_IU', 
+        'Energy_Consumption_Per_Capita_btu',
+        'Installed_Generating_Capicity_kW',
+        'CO2_Emissions_mTonnes',
+        'Unemployed_Population_Est',
+        'Population_Rank',
+        'RGDP_Rank',
+        'RGDP_Per_Capita_Rank',
+        'RGDP_Growth_Rank',
+        'Gini_Rank',
+        'Inflation_rank',
+        'Labor_Force_rank',
+        'Internet_Users_rank',
+        'Emissions_Rank',
+        'GenCap_Rank',
+        'Energy_Consumption_pc_Rank')
+        AND DATA_TYPE IN ('INT', 'SMALLINT', 'TINYINT') THEN 1
+        WHEN COLUMN_NAME IN ('Population', 
+        'Clean_Pop', 
+        'Labor_Force', 
+        'Clean_LF', 
+        'Internet_Users', 
+        'Clean_IU', 
+        'Energy_Consumption_Per_Capita_btu',
+        'Installed_Generating_Capicity_kW',
+        'CO2_Emissions_mTonnes',
+        'Unemployed_Population_Est',
+        'Population_Rank',
+        'RGDP_Rank',
+        'RGDP_Per_Capita_Rank',
+        'RGDP_Growth_Rank',
+        'Gini_Rank',
+        'Inflation_rank',
+        'Labor_Force_rank',
+        'Internet_Users_rank',
+        'Emissions_Rank',
+        'GenCap_Rank',
+        'Energy_Consumption_pc_Rank')
+        AND DATA_TYPE IN ('FLOAT', 'DECIMAL') THEN 0.5 --- still works, but not the most appropriate data type
+        WHEN COLUMN_NAME IN ('Population', 
+        'Clean_Pop', 
+        'Labor_Force', 
+        'Clean_LF', 
+        'Internet_Users', 
+        'Clean_IU', 
+        'Energy_Consumption_Per_Capita_btu',
+        'Installed_Generating_Capicity_kW',
+        'CO2_Emissions_mTonnes',
+        'Unemployed_Population_Est',
+        'Population_Rank',
+        'RGDP_Rank',
+        'RGDP_Per_Capita_Rank',
+        'RGDP_Growth_Rank',
+        'Gini_Rank',
+        'Inflation_rank',
+        'Labor_Force_rank',
+        'Internet_Users_rank',
+        'Emissions_Rank',
+        'GenCap_Rank',
+        'Energy_Consumption_pc_Rank')
+        AND DATA_TYPE NOT IN ('INT', 'SMALLINT', 'TINYINT', 'FLOAT', 'DECIMAL') THEN 0
+
+        --- Test Money values' validity
+        WHEN COLUMN_NAME IN ('RGDP', 
+        'RGDP_Per_Capita', 
+        'Education_Budget_Est', 
+        'Military_Budget_Est', 
+        'Coal_Revenue_Est', 
+        'Agricultural_Product_Est', 
+        'Industrial_Product_Est', 
+        'Services_Product_Est') 
+        AND DATA_TYPE = 'MONEY' THEN 1
+        WHEN COLUMN_NAME IN ('RGDP', 
+        'RGDP_Per_Capita', 
+        'Education_Budget_Est', 
+        'Military_Budget_Est', 
+        'Coal_Revenue_Est', 
+        'Agricultural_Product_Est', 
+        'Industrial_Product_Est', 
+        'Services_Product_Est') 
+        AND DATA_TYPE IN ('FLOAT', 'DECIMAL', 'INT') THEN 0.5 --- still works, but not the most appropriate data type
+        WHEN COLUMN_NAME IN ('RGDP', 
+        'RGDP_Per_Capita', 
+        'Education_Budget_Est', 
+        'Military_Budget_Est', 
+        'Coal_Revenue_Est', 
+        'Agricultural_Product_Est', 
+        'Industrial_Product_Est', 
+        'Services_Product_Est') 
+        AND DATA_TYPE NOT IN ('MONEY', 'FLOAT', 'DECIMAL', 'INT') THEN 0
+
+        -- Test pct & float values' validity
+        WHEN COLUMN_NAME IN ('RGDP_Growth_Rate', 
+        'Populaiton_Growth_Rate',
+        'Gini_Index_Coefficient',
+        'Inflation_Rate_YoY_Consumer_Prices',
+        'Unemployment_Rate',
+        'GDP_Pct_Agricultural',
+        'GDP_Pct_Industrial',
+        'GDP_Pct_Services',
+        'Education_Budget_Pct',
+        'Military_budget_pct',
+        'Coal_Revenue_Pct_GDP',
+        'pct_Population_with_internet_Est')
+        AND DATA_TYPE IN('FLOAT', 'DECIMAL') THEN 1
+        WHEN COLUMN_NAME IN ('RGDP_Growth_Rate', 
+        'Populaiton_Growth_Rate',
+        'Gini_Index_Coefficient',
+        'Inflation_Rate_YoY_Consumer_Prices',
+        'Unemployment_Rate',
+        'GDP_Pct_Agricultural',
+        'GDP_Pct_Industrial',
+        'GDP_Pct_Services',
+        'Education_Budget_Pct',
+        'Military_budget_pct',
+        'Coal_Revenue_Pct_GDP',
+        'pct_Population_with_internet_Est')
+        AND DATA_TYPE NOT IN ('FLOAT', 'DECIMAL') THEN 0
+
+        --- Test year values' validity
+        WHEN COLUMN_NAME IN ('RGDP_YEAR',
+        'RGDP_G_Year',
+        )
+
+        ELSE 0
+    END AS validity_score
 INTO dq_validity
 FROM 
     INFORMATION_SCHEMA.COLUMNS
@@ -57,7 +195,6 @@ WHERE
 ORDER BY 
     ORDINAL_POSITION;
 
-select * from dq_validity;
 
 -- Completeness Check for derived_data
 SELECT 
@@ -80,7 +217,7 @@ SELECT
     CAST(COUNT(PopG_Year) AS FLOAT) / COUNT(Name) AS PopG_Year_completeness,
     CAST(COUNT(Gini_Index_Coefficient) AS FLOAT) / COUNT(Name) AS Gini_Index_Coefficient_completeness,
     CAST(COUNT(Gini_Rank) AS FLOAT) / COUNT(Name) AS Gini_Rank_completeness,
-    CAST(COUNT(Gini_date) AS FLOAT) / COUNT(Name) AS Gini_date_completeness,
+    CAST(COUNT(Gini_Year) AS FLOAT) / COUNT(Name) AS Gini_Year_completeness,
     CAST(COUNT(Inflation_Rate_YoY_Consumer_Prices) AS FLOAT) / COUNT(Name) AS Inflation_Rate_YoY_Consumer_Prices_completeness,
     CAST(COUNT(Inflation_Rate_Year) AS FLOAT) / COUNT(Name) AS Inflation_Rate_Year_completeness,
     CAST(COUNT(Inflation_rank) AS FLOAT) / COUNT(Name) AS Inflation_rank_completeness,
