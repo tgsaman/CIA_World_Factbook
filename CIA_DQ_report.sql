@@ -26,7 +26,9 @@ drop table if exists dq_completeness;
 
 DROP TABLE IF EXISTS dq_validity;
 
-drop table if exists dq_timeliness;
+DROP TABLE IF EXISTS dq_timeliness
+
+drop table if exists dq_timeliness_raw;
 DROP TABLE IF EXISTS RGDP_timeliness;
 DROP TABLE IF EXISTS RGDP_G_timeliness;
 DROP TABLE IF EXISTS PopG_timeliness;
@@ -52,8 +54,6 @@ SELECT
         --- Test string values' validitiy
         WHEN COLUMN_NAME IN ('REGION', 'NAME')
         AND DATA_TYPE IN ('VARCHAR', 'NVARCHAR') THEN 1
-        WHEN COLUMN_NAME IN ('REGION', 'NAME')
-        AND DATA_TYPE NOT IN ('VARCHAR', 'NVARCHAR') THEN 0
         
         --- Test Integer values' validity
         WHEN COLUMN_NAME IN ('Population', 
@@ -100,28 +100,7 @@ SELECT
         'GenCap_Rank',
         'Energy_Consumption_pc_Rank')
         AND DATA_TYPE IN ('FLOAT', 'DECIMAL') THEN 0.5 --- still works, but not the most appropriate data type
-        WHEN COLUMN_NAME IN ('Population', 
-        'Clean_Pop', 
-        'Labor_Force', 
-        'Clean_LF', 
-        'Internet_Users', 
-        'Clean_IU', 
-        'Energy_Consumption_Per_Capita_btu',
-        'Installed_Generating_Capicity_kW',
-        'CO2_Emissions_mTonnes',
-        'Unemployed_Population_Est',
-        'Population_Rank',
-        'RGDP_Rank',
-        'RGDP_Per_Capita_Rank',
-        'RGDP_Growth_Rank',
-        'Gini_Rank',
-        'Inflation_rank',
-        'Labor_Force_rank',
-        'Internet_Users_rank',
-        'Emissions_Rank',
-        'GenCap_Rank',
-        'Energy_Consumption_pc_Rank')
-        AND DATA_TYPE NOT IN ('INT', 'SMALLINT', 'TINYINT', 'FLOAT', 'DECIMAL') THEN 0
+
 
         --- Test Money values' validity
         WHEN COLUMN_NAME IN ('RGDP', 
@@ -142,15 +121,6 @@ SELECT
         'Industrial_Product_Est', 
         'Services_Product_Est') 
         AND DATA_TYPE IN ('FLOAT', 'DECIMAL', 'INT') THEN 0.5 --- still works, but not the most appropriate data type
-        WHEN COLUMN_NAME IN ('RGDP', 
-        'RGDP_Per_Capita', 
-        'Education_Budget_Est', 
-        'Military_Budget_Est', 
-        'Coal_Revenue_Est', 
-        'Agricultural_Product_Est', 
-        'Industrial_Product_Est', 
-        'Services_Product_Est') 
-        AND DATA_TYPE NOT IN ('MONEY', 'FLOAT', 'DECIMAL', 'INT') THEN 0
 
         -- Test pct & float values' validity
         WHEN COLUMN_NAME IN ('RGDP_Growth_Rate', 
@@ -166,24 +136,44 @@ SELECT
         'Coal_Revenue_Pct_GDP',
         'pct_Population_with_internet_Est')
         AND DATA_TYPE IN('FLOAT', 'DECIMAL') THEN 1
-        WHEN COLUMN_NAME IN ('RGDP_Growth_Rate', 
-        'Populaiton_Growth_Rate',
-        'Gini_Index_Coefficient',
-        'Inflation_Rate_YoY_Consumer_Prices',
-        'Unemployment_Rate',
-        'GDP_Pct_Agricultural',
-        'GDP_Pct_Industrial',
-        'GDP_Pct_Services',
-        'Education_Budget_Pct',
-        'Military_budget_pct',
-        'Coal_Revenue_Pct_GDP',
-        'pct_Population_with_internet_Est')
-        AND DATA_TYPE NOT IN ('FLOAT', 'DECIMAL') THEN 0
 
         --- Test year values' validity
-        WHEN COLUMN_NAME IN ('RGDP_YEAR',
+        WHEN COLUMN_NAME IN ('RGDP_Year',
         'RGDP_G_Year',
-        )
+        'PopG_Year',
+        'Gini_Year',
+        'Inflation_Rate_Year',
+        'Labor_Force_Year',
+        'Unemployment_Rate_Year',
+        'GDPa_pct_Year',
+        'GDPi_pct_Year',
+        'GDPs_pct_Year',
+        'Int_Users_Year',
+        'Edu_Budget_Year',
+        'Mil_Budget_Year',
+        'Coal_Rev_Year',
+        'Emissions_Year',
+        'GenCap_Year',
+        'Consumption_Year')
+        AND DATA_TYPE IN ('YEAR') THEN 1
+        WHEN COLUMN_NAME IN ('RGDP_Year',
+        'RGDP_G_Year',
+        'PopG_Year',
+        'Gini_Year',
+        'Inflation_Rate_Year',
+        'Labor_Force_Year',
+        'Unemployment_Rate_Year',
+        'GDPa_pct_Year',
+        'GDPi_pct_Year',
+        'GDPs_pct_Year',
+        'Int_Users_Year',
+        'Edu_Budget_Year',
+        'Mil_Budget_Year',
+        'Coal_Rev_Year',
+        'Emissions_Year',
+        'GenCap_Year',
+        'Consumption_Year')
+        AND DATA_TYPE IN ('INT', 'SMALLINT', 'TINYINT') THEN 0.5
 
         ELSE 0
     END AS validity_score
@@ -444,7 +434,7 @@ ORDER BY Consumption_y_valid DESC;
 
 -- Final join query
 SELECT *
-INTO DQ_timeliness
+INTO DQ_timeliness_raw
 FROM RGDP_timeliness
     LEFT JOIN RGDP_G_timeliness ON RGDP_timeliness.RGDP_y_valid = RGDP_G_timeliness.RGDP_G_y_valid
     LEFT JOIN PopG_timeliness ON RGDP_timeliness.RGDP_y_valid = PopG_timeliness.PopG_y_valid
@@ -462,6 +452,55 @@ FROM RGDP_timeliness
     LEFT JOIN GenCap_timeliness on RGDP_timeliness.RGDP_y_valid = GenCap_timeliness.GenCap_y_valid
     LEFT JOIN Consumption_timeliness on RGDP_timeliness.RGDP_y_valid = Consumption_timeliness.Consumption_y_valid
 ORDER BY RGDP_timeliness.RGDP_y_valid DESC;
+
+-- Unpivot and Aggregate the Year Columns
+
+WITH UnpivotedYears AS (
+    SELECT 
+        UnpivotedYear AS Year
+    FROM 
+        DQ_timeliness_raw
+    UNPIVOT (
+        UnpivotedYear FOR YearColumn IN (RGDP_y_valid, 
+        RGDP_G_y_valid, 
+        PopG_y_valid, 
+        Inflation_Rate_y_valid, 
+        Labor_Force_y_valid,
+        Unemployment_Rate_y_valid,
+        GDPa_pct_y_valid,
+        GDPi_pct_y_valid,
+        GDPs_pct_y_valid,
+        Int_Users_y_valid,
+        Edu_Budget_y_valid,
+        Mil_Budget_y_valid,
+        Coal_Rev_y_valid,
+        Emissions_y_valid,
+        GenCap_y_valid,
+        Consumption_y_valid)
+    ) AS Unpvt),
+dq_timeliness AS (
+    SELECT 
+        Year,
+        COUNT(*) AS Occurrences,
+        COUNT(*) * 100.0 / (SELECT COUNT(*) * (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS 
+                                               WHERE TABLE_NAME = 'DQ_timeliness_raw' 
+                                               AND COLUMN_NAME LIKE '%_Year%')
+                            FROM DQ_timeliness_raw) AS Percentage_Frequency
+    FROM 
+        UnpivotedYears
+    GROUP BY 
+        Year
+)
+
+/*SELECT 
+    Year,
+    Occurrences,
+    Percentage_Frequency
+FROM 
+    YearAggregates
+ORDER BY 
+    Year;*/
+
 
 select * from DQ_timeliness;
 select * from dq_completeness;
