@@ -318,7 +318,7 @@ from cleansed_data;
 --- Insert US Defense Spending Estimate (essential row) to table
 /* Estimate sourcing (Department of Defense) linked in visualization*/
 Update derived_data
-Set Military_Budget_Est = 8498000000000
+Set Military_Budget_Est = 849800000000
 Where Name = 'United States';
 
 select * from derived_data;
