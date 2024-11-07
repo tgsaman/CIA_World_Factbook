@@ -321,4 +321,4 @@ Update derived_data
 Set Military_Budget_Est = 8498000000000
 Where Name = 'United States';
 
-
+select * from derived_data;

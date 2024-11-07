@@ -2,7 +2,15 @@
 
 DATA QUALITY:
 
+These queries were used to generate excel workbooks of metadata that was used to derive a Data Quality Score. 
+
 All data was obtained from the CIA World Factbook website, linked in the Dashboard under "Data Source".
+
+In each case, propities about the tables developed, such as the ratio of data to nulls, the appropriateness of the 
+saved data type (eg. text or integer) and the recency of that data (ed. 2023 vs 2016). 
+
+More information about the dimensions of data quality, used to derive this score can be found here:
+https://dama-nl.org/wp-content/uploads/2020/09/DDQ-Dimensions-of-Data-Quality-Research-Paper-version-1.2-d.d.-3-Sept-2020.pdf
 
 Notably, the migrant data table is basically unusable, as the figures were not calculated correctly: 
     Both Ukraine and Peru are estimated to be losing people to migration right now,
@@ -13,22 +21,19 @@ Notably, the migrant data table is basically unusable, as the figures were not c
     flipped [(Emigration - Immigration)/Population]. The entire migration table needs to be redone by the CIA 
     to get correct values.
 
-Finally, the CIA does not provide historical data beyond three years, and even then, it's in PDF form
-optimized for print. If I was able to access historical, nested data for each country, I'd
-be able to make a table for each year and animate changes over time, which would have been fun.
-Instead, this script is a less-automated means of joining exportable flat files.
+Finally, the CIA does not provide historical data or track their changes to these tables. 
+Adding that additional functionality to this project is out of scope for what I'm trying to do. 
+If you really want to see that, though, shoot me an email with a contract or job offer. 
 */
 
 ---=== Data Quality Metrics ===---
-drop table if exists data_quality;
-
 drop table if exists dq_completeness;
 
 DROP TABLE IF EXISTS dq_validity;
 
-DROP TABLE IF EXISTS dq_timeliness
+DROP TABLE IF EXISTS dq_consistency
 
-drop table if exists dq_timeliness_raw;
+DROP TABLE IF EXISTS dq_timeliness_raw;
 DROP TABLE IF EXISTS RGDP_timeliness;
 DROP TABLE IF EXISTS RGDP_G_timeliness;
 DROP TABLE IF EXISTS PopG_timeliness;
@@ -453,66 +458,70 @@ FROM RGDP_timeliness
     LEFT JOIN Consumption_timeliness on RGDP_timeliness.RGDP_y_valid = Consumption_timeliness.Consumption_y_valid
 ORDER BY RGDP_timeliness.RGDP_y_valid DESC;
 
--- Unpivot and Aggregate the Year Columns
+--- Consistency Check
 
-WITH UnpivotedYears AS (
-    SELECT 
-        ISNULL(Year, 0) AS Year
-    FROM 
-        DQ_timeliness_raw
-    UNPIVOT (
-        UnpivotedYear FOR YearColumn IN (RGDP_y_valid, 
-        RGDP_G_y_valid, 
-        PopG_y_valid, 
-        Inflation_Rate_y_valid, 
-        Labor_Force_y_valid,
-        Unemployment_Rate_y_valid,
-        GDPa_pct_y_valid,
-        GDPi_pct_y_valid,
-        GDPs_pct_y_valid,
-        Int_Users_y_valid,
-        Edu_Budget_y_valid,
-        Mil_Budget_y_valid,
-        Coal_Rev_y_valid,
-        Emissions_y_valid,
-        GenCap_y_valid,
-        Consumption_y_valid)
-    ) AS Unpvt
-),
-dq_timeliness AS (
-    SELECT 
-        Year,
-        COUNT(*) AS Occurrences,
-        CASE
-            WHEN ((SELECT COUNT(*) 
-                FROM INFORMATION_SCHEMA.COLUMNS 
-                WHERE TABLE_NAME = 'DQ_timeliness_raw' 
-                AND COLUMN_NAME LIKE '%_y_valid%') *
-                (SELECT COUNT(*) FROM DQ_timeliness_raw)) > 0
-            THEN COUNT(*) * 100.0 / 
-                ((SELECT COUNT (*)
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_NAME = 'DQ_timeliness_raw'
-                AND COLUMN_NAME LIKE '%_y_valid%') *
-                (SELECT COUNT(*) FROM DQ_timeliness_raw))
-            ELSE 0
-        END AS Percentage_Frequency
-    FROM 
-        UnpivotedYears
-    GROUP BY 
-        Year
-)
-
-/*SELECT 
-    Year,
-    Occurrences,
-    Percentage_Frequency
+SELECT 
+    m.Name,
+    (CASE WHEN m.Region IS NOT NULL AND d.Region IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Name IS NOT NULL AND d.Name IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Population IS NOT NULL AND d.Clean_Pop IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Population_Rank IS NOT NULL AND d.Population_Rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.RGDP IS NOT NULL AND d.RGDP IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.RGDP_Year IS NOT NULL AND d.RGDP_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.RGDP_Rank IS NOT NULL AND d.RGDP_Rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.RGDP_Per_Capita IS NOT NULL AND d.RGDP_Per_Capita IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.RGDP_Per_Capita_Rank IS NOT NULL AND d.RGDP_Per_Capita_Rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.RGDP_Growth_Rate IS NOT NULL AND d.RGDP_Growth_Rate IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.RGDP_G_Year IS NOT NULL AND d.RGDP_G_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.RGDP_Growth_Rank IS NOT NULL AND d.RGDP_Growth_Rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Population_Growth_Rate IS NOT NULL AND d.Population_Growth_Rate IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.PopG_Year IS NOT NULL AND d.PopG_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Gini_Index_Coefficient IS NOT NULL AND d.Gini_Index_Coefficient IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Gini_Rank IS NOT NULL AND d.Gini_Rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Gini_Year IS NOT NULL AND d.Gini_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Inflation_Rate_YoY_Consumer_Prices IS NOT NULL AND d.Inflation_Rate_YoY_Consumer_Prices IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Inflation_Rate_Year IS NOT NULL AND d.Inflation_Rate_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Inflation_rank IS NOT NULL AND d.Inflation_rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Labor_Force IS NOT NULL AND d.Clean_LF IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Labor_Force_Year IS NOT NULL AND d.Labor_Force_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Labor_Force_rank IS NOT NULL AND d.Labor_Force_rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Unemployment_Rate IS NOT NULL AND d.Unemployment_Rate IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Unemployment_Rate_Year IS NOT NULL AND d.Unemployment_Rate_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.GDP_Pct_Agricultural IS NOT NULL AND d.GDP_Pct_Agricultural IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.GDPa_pct_Year IS NOT NULL AND d.GDPa_pct_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.GDP_Pct_Industrial IS NOT NULL AND d.GDP_Pct_Industrial IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.GDPi_pct_Year IS NOT NULL AND d.GDPi_pct_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.GDP_Pct_Services IS NOT NULL AND d.GDP_Pct_Services IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.GDPs_pct_Year IS NOT NULL AND d.GDPs_pct_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Internet_Users IS NOT NULL AND d.Clean_IU IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Int_Users_Year IS NOT NULL AND d.Int_Users_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Internet_Users_rank IS NOT NULL AND d.Internet_Users_rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Education_Budget_Pct IS NOT NULL AND d.Education_Budget_Pct IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Edu_Budget_Year IS NOT NULL AND d.Edu_Budget_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Military_budget_pct IS NOT NULL AND d.Military_budget_pct IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Mil_Budget_Year IS NOT NULL AND d.Mil_Budget_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Coal_Revenue_Pct_GDP IS NOT NULL AND d.Coal_Revenue_Pct_GDP IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Coal_Rev_Year IS NOT NULL AND d.Coal_Rev_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.CO2_Emissions_mTonnes IS NOT NULL AND d.CO2_Emissions_mTonnes IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Emissions_Year IS NOT NULL AND d.Emissions_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Emissions_Rank IS NOT NULL AND d.Emissions_Rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Installed_Generating_Capacity_kW IS NOT NULL AND d.Installed_Generating_Capacity_kW IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.GenCap_Year IS NOT NULL AND d.GenCap_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.GenCap_Rank IS NOT NULL AND d.GenCap_Rank IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Energy_Consumption_Per_Capita_btu IS NOT NULL AND d.Energy_Consumption_Per_Capita_btu IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Consumption_Year IS NOT NULL AND d.Consumption_Year IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN m.Energy_Consumption_pc_Rank IS NOT NULL AND d.Energy_Consumption_pc_Rank IS NOT NULL THEN 1 ELSE 0 END
+    ) AS Congruence_Score
+INTO dq_consistency
 FROM 
-    YearAggregates
-ORDER BY 
-    Year;*/
+    master_reference AS m
+JOIN 
+    derived_data AS d ON m.Name = d.Name
+WHERE 
+    m.Name IS NOT NULL;
 
 
-select * from DQ_timeliness order by [Year];
 select * from dq_completeness;
 select * from dq_validity;
+select * from DQ_timeliness_raw;
+select * from dq_consistency;
