@@ -4,12 +4,15 @@ This repository contains open-source code for relating & transforming flat files
 
 Specifically, I work with three SQL scripts to join CSV files on a consistent slug, and then transform them into a comprehensive
 SQL database. This database is intended to cleanse, analyze, and transform otherwise unweildy data for efficient use in Tableau.
+
 The public Tableau dashboard is available at this link:
+https://public.tableau.com/app/profile/thomas.samandi/viz/GlobalEconomyDashboard_17303273731270/GDPHome?publish=yes
+
 
 This is an example of a multi-stage program that can ingest, test, and export raw CSV data into 
-a relational, clean format for use in visualization; ie. a data pipeline.
+a relational, clean format for use in visualization; ie. a simple data pipeline.
 
-As a stretch goal, I intend to build a bash script wrapper that allows users to automatically run these programs on their own SQL server. However, given the relatively low-quality data (see DQ report) I figured this wasn't the best use of my time right now.
+As a stretch goal, I intend to build a bash script wrapper that allows users to automatically log updates to these datasets in a server, which can be used for live updates and historical data storage. However, given the effort required to modernize this relatively low-quality data (see DQ report) I figured those goal wasn't the best use of my unpaid time.
 
 SETUP & ETL:
 
