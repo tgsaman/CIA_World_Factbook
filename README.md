@@ -12,7 +12,7 @@ https://public.tableau.com/app/profile/thomas.samandi/viz/GlobalEconomyDashboard
 This is an example of a multi-stage program that can ingest, test, and export raw CSV data into 
 a relational, clean format for use in visualization; ie. a simple data pipeline.
 
-As a stretch goal, I intend to build a bash script wrapper that allows users to automatically log updates to these datasets in a server, which can be used for live updates and historical data storage. However, given the effort required to modernize this relatively low-quality data (see DQ report) I figured those goal wasn't the best use of my unpaid time.
+This is an unpaid project I'm working on betwen contracts. As a stretch goal, I intend to build a bash script wrapper that allows users to automatically log updates to these datasets in a server, which can be used for live updates and historical data storage. However, given the effort required to modernize this relatively low-quality data (see DQ report) I figured that goal wasn't the best use of my unpaid time.
 
 SETUP & ETL:
 
